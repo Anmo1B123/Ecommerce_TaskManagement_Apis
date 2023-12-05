@@ -1,3 +1,4 @@
+import fs from 'fs';
 import {users} from "../models/users.js"
 import apiResponse from '../utils/apiResponse.js';
 import apiError from '../utils/apiError.js';
@@ -22,84 +23,106 @@ const createNewUser= asyncHandler(async (req, res)=>{
 const{username=undefined, firstname=undefined, lastname=undefined, email=undefined, password=undefined}= req.body /*|| {
           username:undefined, firstname:undefined, lastname:undefined, email:undefined, password:undefined}*/
 console.log(username, firstname);
+const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : "";
+const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : "";
 
+/* if multer middleware is in set and user is sending the files correctly the files will be saved no matter what
+    SO- proactively implemented a strategy where files will be unlinked/deleted as well while throwing apiErrors  */
 if([username, firstname, lastname, email, password].some((prop)=>{return prop===undefined||prop?.trim()===""}))
 {
+    fs.unlinkSync(avatarfilepath);
+    fs.unlinkSync(coverimagefilepath); /*BETTER TO CREATE A FUNCTION OF THIS REPITITIVE TASK- THEN DELETE THIS COMMENT*/
     throw new apiError('all fields are required', 400);
 }
 else
-{
-const userbyUsername= await users.findOne({username})
+{   
 
-console.log(userbyUsername);
-console.log(username);
+    if(/\S+@\S+\.\S+/.test(email))
+    {
         
-    if(userbyUsername && username.toLowerCase()===userbyUsername.username) 
-        /*=> at first this if statment didn't seem to work BECAUSE username in the database was getting stored in 
-            lowercase (bcoz of intentionally designing username in userschema in such a way to store lowercase only 
-                       $ doCheck /models/users.js $)
-            and username from req.body was coming as user is and will be sending.
-            SO- applied .toLowerCase() to req.body.username                
-        */ 
-    {
-        throw new apiError('username already taken', 400);
-    }
-
-    else
-    {
-
-    const userByEmail = await users.findOne({email});
-    console.log(userByEmail)
-
-        if(userByEmail)
-        {
-            throw new apiError('user already exists, Kindly login', 400);
+        const userbyUsername= await users.findOne({ username: { $regex: new RegExp(username, 'i') } });
+                                                    //just like here 
+        console.log(userbyUsername);
+        console.log(username);
+        
+        if(userbyUsername && username.toLowerCase()===userbyUsername.username){
+            fs.unlinkSync(avatarfilepath);
+            fs.unlinkSync(coverimagefilepath);
+           throw new apiError('username already taken', 400);
         }
+                    /*=> at first this if statment didn't seem to work BECAUSE username in the database was getting stored in 
+                    lowercase (bcoz of intentionally designing username in userschema in such a way to store lowercase only 
+                    $ doCheck /models/users.js $)
+                    and username from req.body was coming as user is and will be sending.
+                    SO- applied .toLowerCase() to req.body.username 
+        
+                    OR- we can use regular expression search in mongoose */ 
         else
         {
-        const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : "";
-        const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : "";
-        
-        console.log(avatarfilepath); console.log(coverimagefilepath); console.log(' !paths to the file');
-            if (!avatarfilepath)
-            { 
-             throw new apiError('avatar field is required', 404);
-            }                                                       /* NOTE!!
-                                                                    when writing if statment without the else part
-                                                                    we use RETURN keyword in if body in order to avoid writing
-                                                                    else part, but if an error is being thrown you can additonally avoid
-                                                                    using the RETURN keyword */
             
-            /*if (!coverimagefilepath) return null; <= DONT' DO THIS 
-                                                        BECAUSE
+            const userByEmail = await users.findOne({email});
+            console.log(userByEmail)
+            
+            if(userByEmail)
+            {
+                fs.unlinkSync(avatarfilepath);
+        fs.unlinkSync(coverimagefilepath);
+                throw new apiError('user already exists, Kindly login', 400);
+            }
+            else
+            {
+                
+                
+                console.log(avatarfilepath); console.log(coverimagefilepath); console.log(' !paths to the file');
+                if (!avatarfilepath)
+                { 
+                    fs.unlinkSync(avatarfilepath);
+        fs.unlinkSync(coverimagefilepath);
+                    throw new apiError('avatar field is required', 404);
+                }                                                       /* NOTE!!
+                when writing if statment without the else part
+                we use RETURN keyword in if body in order to avoid writing
+                else part, but if an error is being thrown you can additonally avoid
+                using the RETURN keyword */
+                
+                /*if (!coverimagefilepath) return null; <= DONT' DO THIS 
+                BECAUSE
                 it means if there is no coverimagefilepath as in the user didn't upload coverimage while registering
                 then it's simply going to return NULL/NOTHING
                 and the code written further won't run                                                  
-           */
-                if (!coverimagefilepath || coverimagefilepath) /* YOU CAN DO THIS INSTEAD. IT'S OPTIONAL*/
-                {
-                const avatar= await uploadOnCloudinary(avatarfilepath);
-                const avatarPublicId= avatar.public_id;
-                const avatarUrl =avatar?.url;
-                
-                
-                const coverimage= await uploadOnCloudinary(coverimagefilepath);
-                const coverimagePublicId= coverimage.public_id;
-                const coverimageUrl =coverimage?.url;
-                
-                const uniqueId= uniqueIdUserSpecificGenerator();
-                const avatarObjFields={url: avatarUrl?avatarUrl:'', uniqueId, publicId:avatarPublicId, localpath:avatarfilepath}
-                const coverimageObjFields={url: coverimageUrl?coverimageUrl:'', uniqueId, publicId:coverimagePublicId, localpath:coverimagefilepath}
-                
-                let user= await users.create({username, firstname, lastname, email, password, 
-                                    avatar: avatarObjFields, 
-                                    coverimage: coverimageObjFields })
-                res.status(200).json(new apiResponse(200, 'success', user))
+                */
+               if (!coverimagefilepath || coverimagefilepath) /* YOU CAN DO THIS INSTEAD. IT'S OPTIONAL.
+                                                                DOESN'T EVEN MAKE SENSE*/
+               {
+                   const avatar= await uploadOnCloudinary(avatarfilepath);
+                   const avatarPublicId= avatar.public_id;
+                   const avatarUrl =avatar?.url;
+                   
+                   
+                   const coverimage= await uploadOnCloudinary(coverimagefilepath);
+                   const coverimagePublicId= coverimage.public_id;
+                   const coverimageUrl =coverimage?.url;
+                   
+                   const uniqueId= uniqueIdUserSpecificGenerator();
+                   const avatarObjFields={url: avatarUrl?avatarUrl:'', uniqueId, publicId:avatarPublicId, localpath:avatarfilepath}
+                   const coverimageObjFields={url: coverimageUrl?coverimageUrl:'', uniqueId, publicId:coverimagePublicId, localpath:coverimagefilepath}
+                   
+                   let user= await users.create({username, firstname, lastname, email, password, 
+                    avatar: avatarObjFields, 
+                    coverimage: coverimageObjFields })
+                    res.status(200).json(new apiResponse(200, 'success', user))
                 }   
-
-    
+                
+            }    
+                
         }
-
+            
+    }
+    else
+    {   
+        fs.unlinkSync(avatarfilepath);
+        fs.unlinkSync(coverimagefilepath);
+        throw new apiError('email requires @ symbol, kindly check the email provided', 400)
     }
 }
 });
@@ -170,7 +193,9 @@ const deleteUser= asyncHandler(async (req, res, next)=>{
     if(!userById){throw new apiError(`user by this ID doesn't exist`, 404)}
 
 
-    await userById.deleteFromCloudinary();
+    await userById.deleteFromCloudinary(); //using the approach of saving public id of cloudinary and localfilePath
+                                           // in database and creating a method specific to userschema to apply to user instances
+                                           // for deleting the file locally and on cloud when user is deleted.
 
     const acknowledgement=await users.deleteOne({_id:id});
 

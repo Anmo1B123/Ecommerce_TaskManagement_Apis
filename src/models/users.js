@@ -60,8 +60,10 @@ return next();
 });
 
 userSchema.methods.isPasswordCorrect= async function(password){
-   const response =await bcrypt.compare(password, this.password)
-   return response;
+   
+    const response =await bcrypt.compare(password, this.password) 
+    return response;
+   
 };
 userSchema.methods.generateToken= function(){
     const token= jwt.sign({
@@ -69,7 +71,7 @@ userSchema.methods.generateToken= function(){
     username: this.username,
     email: this.email
  }, process.env.JWT_SECRET,
- {expiresIn: JWT_EXPIRY}
+ {expiresIn: process.env.JWT_EXPIRY}
  )
  return token;
 };

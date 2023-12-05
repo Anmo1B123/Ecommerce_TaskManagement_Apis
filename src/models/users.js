@@ -1,6 +1,8 @@
 import mongoose, {Schema} from "mongoose";
 import bcrypt from 'bcrypt';
 import jwt from'jsonwebtoken';
+import {v2 as cloudinary} from 'cloudinary';
+import fs from 'fs'
 
 
 const userSchema= new Schema ({
@@ -36,13 +38,13 @@ const userSchema= new Schema ({
     },password:{
         type:String,
         required: [true, 'password is a required field'],
-        lowercase: true, 
         trim: true,
         min: 5
     },avatar:{
-        type: String
+        type:{url:String, uniqueId: String, publicId: String, localpath: String},
+        required:true
     },coverimage:{
-        type: String
+        type:{url:String, uniqueId: String, publicId: String, localpath: String}
     }
 
 }, {timestamps: true});
@@ -62,13 +64,34 @@ userSchema.methods.isPasswordCorrect= async function(password){
    return response;
 };
 userSchema.methods.generateToken= function(){
-     jwt.sign({
+    const token= jwt.sign({
     id: this._id,
     username: this.username,
     email: this.email
  }, process.env.JWT_SECRET,
  {expiresIn: JWT_EXPIRY}
  )
+ return token;
 };
+
+userSchema.methods.deleteFromCloudinary= async function(){
+try {
+    console.log(this.avatar.publicId);
+    console.log(this.coverimage.publicId);
+        await cloudinary.uploader.destroy(this.avatar.publicId?this.avatar.publicId:null);
+        await cloudinary.uploader.destroy(this.coverimage.publicId?this.coverimage.publicId:null);
+        fs.unlinkSync(this.avatar.localpath?this.avatar.localpath:null);
+        fs.unlinkSync(this.coverimage.localpath?this.coverimage.localpath:null);
+        console.log(`files deleted from local and remote storage`)
+    } catch (error) {
+        console.log(error);
+        
+    }
+    }
+
+    
+    
+
+
 
 export const users= mongoose.model('users', userSchema );

@@ -17,14 +17,14 @@ export const uploadOnCloudinary= async function(localfilepath, public_id=undefin
         
     return response;}
         
-        else{ console.log(`a file couldn't upload on cloudinary as no path was given / multer wasn't used
-        `); return null;}
+        else{ console.log(`A file wasn't uploaded on cloudinary as a path wasn't given / multer wasn't used.
+        `); return;}
         
         
     } catch (error) {
         fs.unlinkSync(localfilepath);
         console.log('Local file removed due to error in Uploading On Cloudinary')
-        return null;
+        return;
 
     }
     

@@ -2,9 +2,7 @@ import mongoose from 'mongoose';
 const dbName='projectDB';
 const dbConnect =  async function(){
 try {
-    const Connection =await mongoose.connect(`${process.env.MONGODB_URI}`, {dbName
-        ,useNewUrlParser: true,
-        useUnifiedTopology: true,});
+    const Connection =await mongoose.connect(`${process.env.MONGODB_URI}`, {dbName});
     console.log(`MONGODB CONNECTED ON HOST: ${Connection.connection.host}`)
 
 } catch (error) {

@@ -2,6 +2,8 @@ import { Router } from "express";
 import {getAllUsers,createNewUser,getUser,updateUser,deleteUser} from '../controllers/userControllers.js';
 import {upload} from '../middlewares/multer.js';
 import { errorHandler } from "../middlewares/errorHandler.js";
+import { emailSymbolChecker } from "../middlewares/emailsymbolChecker.js";
+import { ifAdmin, protect } from "../middlewares/autorization.js";
 const route= Router();
 
 /*********************************************************************/
@@ -21,12 +23,12 @@ route.route('/')
 /*********************************************************************/
 
 route.route('/:id')
-.get(getUser)
+.get(protect,getUser)
 .patch(upload.fields([
                         {name: 'avatar', maxCount: 1},
                         {name: 'coverimage', maxCount: 1}
-                    ]),updateUser)
-.delete(deleteUser);
+                    ]),emailSymbolChecker,updateUser)
+.delete(protect,ifAdmin('admin'),deleteUser);
 
 /*********************************************************************/
 

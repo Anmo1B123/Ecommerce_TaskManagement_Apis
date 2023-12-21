@@ -77,6 +77,10 @@ const userSchema= new Schema ({
     passwordChangeTokenExpiry:Date
     ,
     refreshtoken:String
+    ,
+    uniqueVersionAccess:String
+    ,
+    uniqueVersionRefresh:String
     
 }, {timestamps: true});
 
@@ -99,15 +103,17 @@ userSchema.methods.isPasswordCorrect= async function(password){
    
 };
 userSchema.methods.generateToken= function(){
-    let uniqueV1= uniqueIdUserSpecificGenerator()
+    let uniqueV1= uniqueIdUserSpecificGenerator();
 
     const accessToken= jwt.sign({
-                            id: this._id,
+                            _id: this._id,
                             username: this.username,
                             email: this.email,
                             role: this.role,
                             __v: uniqueV1
                         }, process.env.JWT_SECRET, {expiresIn: process.env.JWT_EXPIRY});
+
+    this.uniqueVersionAccess=uniqueV1;
 
     return {accessToken, uniqueV1};
 
@@ -117,11 +123,12 @@ userSchema.methods.generateRefreshToken= function(){
     let uniqueV2= uniqueIdUserSpecificGenerator()
     
     const refreshToken= jwt.sign({
-                            id: this._id,
+                            _id: this._id,
                             __v: uniqueV2
                         }, process.env.JWT_REFRESHTOKEN_SECRET,{expiresIn: process.env.JWT_REFRESHTOKEN_EXPIRY})
  
     this.refreshtoken=refreshToken;
+    this.uniqueVersionRefresh=uniqueV2;
 
     return {refreshToken, uniqueV2};
 };

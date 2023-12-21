@@ -9,7 +9,7 @@ import { client } from "../database/redis.js";
 
 export const newAccessToken= asyncHandler(async (req,res, next)=>{
 
-const user= await users.findById(req.user.id)    
+const user= await users.findById(req.user._id)    
 if(!user) throw new apiError('Invalid Refresh-Token', 401);
 
 
@@ -17,9 +17,11 @@ try {
     const result= await user.generateToken();
     const {accessToken, uniqueV1}=result;
 
-    await client.set('user:token:access', uniqueV1);
+    await user.save({validateBeforeSave:false});
+
+    // await client.set('user:token:access', uniqueV1);
     // req.session.access=uniqueV1; //updating the session.access property with new unique-version of access-token.
-    res.setHeader('Set-cookie', `accessToken=${accessToken}; Path=/; HttpOnly; Secure`)
+    res.setHeader('Set-cookie', `accessToken=${accessToken}; Max-Age=${Date.now()+ 24*60*60*1000}; Path=/; HttpOnly; Secure`)
     res.status(200).json(new apiResponse(201, 'A new access-token has been sent',accessToken))
 } catch (error) {
     throw new apiError('Could not complete the request. Try again later', 500)

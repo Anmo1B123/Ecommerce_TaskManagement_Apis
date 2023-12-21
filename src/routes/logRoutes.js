@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {login,logout} from '../controllers/logController.js'
 import { emailSymbolChecker } from "../middlewares/emailsymbolChecker.js";
-import { protect } from "../middlewares/autorization.js";
+import { protect } from "../middlewares/authorization.js";
 const route= Router();
 
 

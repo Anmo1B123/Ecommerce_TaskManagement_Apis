@@ -16,3 +16,10 @@ UPDATE 16/12/2023
 UPDATE 18/12/2023
 
 * Implemented using Redis for storing the versioning instead of storing it in the req.session's memory storage.
+
+UPDATE 19/12/2023 
+
+* As redis has turned out to be unreliable approach since redis will be getting used just for maintaing cache with some expiry for the fast response of data having keys with unique id of the user for multi user usage.
+YET TO IMPLEMENT THE ABOVE
+
+* Made changes and added two new field in the user schema for storing the versioning of tokens in and for multi-user support of invalidating the tokens (req.session does the same as its unique to every user).

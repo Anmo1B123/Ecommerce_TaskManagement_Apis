@@ -13,12 +13,12 @@ const getAllUsers= asyncHandler(async (req, res, next)=>{
 
 // console.log(req.query);
 if(Object.keys(req.query).length===0)
-{   const totalDocs=await users.find().count()
+{   
     const allUsers=  await users.find().sort('-createdAt').select({ 
     avatar:{ url:true}, 
     coverimage:{url:true},
     username: 1, firstname:1, lastname:1, email:1, password:1, createdAt:1});
-    res.status(200).json(new apiResponse(200, 'success', {length:totalDocs,users:allUsers}));
+    res.status(200).json(new apiResponse(200, 'success', {length:allUsers.length,users:allUsers}));
 }
 else
 {           
@@ -39,14 +39,22 @@ else
         //    console.log(await query)
 
             
-            let data=  await query.queryObj;
+        
+        
+        // console.log(data)
+        
+        const  documentsCount= await query.docsCount;
+        const docsOnThisPage= await query.docsOnthisPage; 
+/* FOR GETTING THE ABOVE VALUE HAD TO USE OBJECT.CREATE(this.queryObj) in the pagination() of apiFeatures.js*/
+        const data=  await query.queryObj;                
+/*TO AVOID THE ERROR OF "QUERY WAS ALREADY EXECUTED" WROTE THE ACTUAL EXECUTION OF THE queryObj 
+at the end named LET DATA. Reason- Since query.docsOnthisPage relies on this.querObj check pagination()
+of apiFeatures.js so executing query.queryobj earlier than query.docsOnthisPage will not create another 
+object from this.queryObj for "this.queryObj.count()" to work as this.queryObj would have gotten executed already*/
+           
 
-            
-            // console.log(data)
-            
-           let  documentsCount= await query.docsCount;
-
-            apiFeatures.pageErrorfunc(documentsCount, req);
+            apiFeatures.pageErrorfunc(documentsCount, req); //Used static function of apifeatures class
+            //will throw an error if skip is gte to documents Count.
            
 
 
@@ -55,7 +63,7 @@ else
 
             
 
-            res.status(200).json(new apiResponse(200,'success', {documentsCount,page:query.page,limit:query.limit,users:data}));
+            res.status(200).json(new apiResponse(200,'success', {Length:documentsCount,page:query.page,limit:query.limit,docsOnThisPage,users:data}));
             
                 
 //                 let page= parseInt(req.query.page) || 1;
@@ -354,7 +362,7 @@ const updateUser= asyncHandler(async (req, res, next)=>{
             if(username && !email)
             {
                 const userbyUsername= await users.findOne({username});
-                if(userbyUsername)throw new apiError('Username in use already. Choose different username',400);
+                if(userbyUsername)throw new apiError('Username in use already',400);
             }
             if(email && !username)
             {
@@ -367,6 +375,8 @@ const updateUser= asyncHandler(async (req, res, next)=>{
                 // if(userbyUsername)throw new apiError('Username in use already. Choose different username',400);
                 // if(userByEmail)throw new apiError('Email in use already', 400);
                 if(userbyUsername && userByEmail)throw new apiError('Username & E-mail both in use already',400);
+                if(userbyUsername && !userByEmail)throw new apiError('Username in use already',400);
+                if(!userbyUsername && userByEmail)throw new apiError('Email in use already',400);
             }
             const avatar= await uploadOnCloudinary(avatarfilepath);
             const avatarPublicId= avatar?.public_id;

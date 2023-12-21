@@ -42,13 +42,6 @@ if(error.isOperational){
 
 const errorHandler= (error, req, res, next)=>{
 
-if(req.files)
-{
-    const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
-    const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
-    if((avatarfilepath && coverimagefilepath) || avatarfilepath){fileDeleteFunction(avatarfilepath, coverimagefilepath);}
-}
-
     if(process.env.NODE_ENV==='development')
     {
 
@@ -61,6 +54,14 @@ if(req.files)
         proderror(error, res);
 
     }
+
+    if(req.files)
+{
+    const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
+    const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
+    if((avatarfilepath && coverimagefilepath) || avatarfilepath){fileDeleteFunction(avatarfilepath, coverimagefilepath);}
+}//Shifted this code to last because its synchronous and I don't want to block the main thread and error response
+//Or I can modify the file delete function to use the asynchronous version of fs.unlink to offload to thread pool/background.
 }
 
 export {errorHandler}

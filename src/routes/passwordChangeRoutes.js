@@ -1,6 +1,6 @@
 import {Router} from 'express'
 import {passwordForgot, passwordReset} from '../controllers/passwordChangeController.js'
-import { protect } from '../middlewares/autorization.js';
+import { protect } from '../middlewares/authorization.js';
 import { emailSymbolChecker } from '../middlewares/emailsymbolChecker.js';
 const route = Router();
 

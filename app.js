@@ -2,9 +2,11 @@ import express from 'express';
 import {config} from 'dotenv';
 config({path: './config.env'});
 import userRoutes from './src/routes/userRoutes.js';
-import logRoute from './src/routes/logRoutes.js'
+import logRoutes from './src/routes/logRoutes.js'
 import passwordChangeRoutes from './src/routes/passwordChangeRoutes.js'
-import newAccessTokenRoute from './src/routes/newAccessTokenGenerationRoute.js'
+import newAccessTokenRoutes from './src/routes/newAccessTokenGenerationRoute.js'
+import todosRoutes from './src/routes/todoRoutes.js'
+import contactRoutes from './src/routes/contactRoutes.js'
 import { errorHandler } from './src/middlewares/errorHandler.js';
 import cookieParser from 'cookie-parser';
 import session from 'express-session'
@@ -23,11 +25,12 @@ app.use(cookieParser());
 
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/users', passwordChangeRoutes);
-app.use('/', logRoute);
-app.use('/', newAccessTokenRoute);
+app.use('/api/v1/todos', todosRoutes);
+app.use('/api/v1/contacts', contactRoutes);
+app.use('/', logRoutes);
+app.use('/', newAccessTokenRoutes);
 
 app.get('/', (req, res)=>{
-    
     res.send('working')
 });
 

@@ -9,14 +9,14 @@ this.queryString=queryString
 
 }
 
-static  pageErrorfunc(q, req){
+static  pageErrorfunc(documentCount, req){
     const page= parseInt(req.query.page) || 1;
     
     const limit= parseInt(req.query.limit) || 5;
     
     const skip= (page-1)*limit
 
-    let count=  q
+    let count=  documentCount
 if (skip >= count) throw new apiError('Page not found', 400)
 
 }
@@ -81,6 +81,11 @@ console.log(this.docsCount + 'hey')
 
 
    this.queryObj= this.queryObj.skip(skip).limit(limit);
+
+   const queryObjForDocsOnthisPage= Object.create(this.queryObj)
+//Used Object.create to preserve the prototype of this.queryObj and queryObjForDocsOnthisPage
+
+   this.docsOnthisPage= queryObjForDocsOnthisPage.count()
    
 
 return this;

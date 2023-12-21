@@ -3,7 +3,7 @@ import {getAllUsers,createNewUser,getUser,updateUser,deleteUser} from '../contro
 import {upload} from '../middlewares/multer.js';
 import { errorHandler } from "../middlewares/errorHandler.js";
 import { emailSymbolChecker } from "../middlewares/emailsymbolChecker.js";
-import { ifAdmin, protect } from "../middlewares/autorization.js";
+import { ifAdmin, protect } from "../middlewares/authorization.js";
 const route= Router();
 
 /*********************************************************************/

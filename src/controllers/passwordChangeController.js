@@ -88,12 +88,20 @@ user.password=password;
 user.passwordChangedAt=Date.now();
 user.passwordChangeToken=undefined;
 user.passwordChangeTokenExpiry=undefined;
-user.refreshtoken=undefined; //undefining the refresh token saved in user schema due to password change.
+user.refreshtoken=undefined; /*undefining the refresh token, it's unique version, access token's unique version
+                             saved in user schema due to password change.*/
+user.uniqueVersionAccess=undefined;
+user.uniqueVersionRefresh=undefined;
 
 await user.save({validateBeforeSave:false});
 
+/* CLEARING THE COOKIES AS WELL */
+res.clearCookie('accessToken');
+res.clearCookie('refreshToken');
+
 // req.session.access=undefined; // undefining both access and refresh t jwt's unique versions in req.session object.
 // req.session.refresh=undefined;
+
 
 res.status(200).json(new apiResponse(200, 'Password Changed Successfully'));
 

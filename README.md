@@ -23,3 +23,7 @@ UPDATE 19/12/2023
 YET TO IMPLEMENT THE ABOVE
 
 * Made changes and added two new field in the user schema for storing the versioning of tokens in and for multi-user support of invalidating the tokens (req.session does the same as its unique to every user).
+
+UPDATE 25/12/2023
+
+*After making some additional routes and apis for the users, I decided to make some changes where all of the routes related to the user will be used at once in app.use()- just make sure to write the route whose last field of the path is expecting a route parameter on last else it will be invoked inadvertently, also make sure to choose the correct http method for other requests else again this will be invoked inadvertently. or just let the files be separate.

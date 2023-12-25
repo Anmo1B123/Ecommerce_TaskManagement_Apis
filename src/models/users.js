@@ -3,9 +3,9 @@ import bcrypt from 'bcrypt';
 import jwt from'jsonwebtoken';
 import {v2 as cloudinary} from 'cloudinary';
 import fs from 'fs'
-import { fileDeleteFunction } from "../utils/fsFileDelete.js";
+import { fileDeleteFunction } from "../utils/helpers/fsFileDelete.js";
 import validator from "validator";
-import { uniqueIdUserSpecificGenerator } from "../utils/uniqueIdGenerator.js";
+import { uniqueIdUserSpecificGenerator } from "../utils/helpers/uniqueIdGenerator.js";
 import crypto from 'crypto';
 import { response } from "express";
 import { client } from "../database/redis.js";
@@ -29,7 +29,7 @@ const userSchema= new Schema ({
     },
     lastname:{
         type:String,
-        required: [true, 'lastname is a required field'],
+        // required: [true, 'lastname is a required field'],
         lowercase: true, 
         trim: true
     },
@@ -70,11 +70,24 @@ const userSchema= new Schema ({
         enum:['user', 'admin'],
         default: 'user'
     },
+    loginType:{
+        type:String,
+        enum:['email', 'google', 'facebook', 'github'],
+        default:'email'
+    },
+    isEmailVerified:{
+        type:Boolean,
+        default:false
+    },
     passwordChangedAt:Date
     ,
     passwordChangeToken:String
     ,
     passwordChangeTokenExpiry:Date
+    ,
+    emailVerificationToken:String
+    ,
+    emailVerificationTokenExpiry:Date
     ,
     refreshtoken:String
     ,
@@ -114,10 +127,13 @@ userSchema.methods.generateToken= function(){
                         }, process.env.JWT_SECRET, {expiresIn: process.env.JWT_EXPIRY});
 
     this.uniqueVersionAccess=uniqueV1;
-
     return {accessToken, uniqueV1};
 
 };
+
+/*since it's just a method of user instance,so have to explicitly call instance.save() method to save the values
+    to their specified field in the schema being saved by the above and next method.*/
+
 
 userSchema.methods.generateRefreshToken= function(){
     let uniqueV2= uniqueIdUserSpecificGenerator()
@@ -187,6 +203,23 @@ try {
 }
 };
 
+userSchema.methods.deleteCoverImageFromCloudinary= async function(){
+try {
+    
+        if(this.coverimage)
+        {
+            await  cloudinary.uploader.destroy(this.coverimage?.publicId?this.coverimage.publicId:null)
+            await fileDeleteFunction(this.coverimage?.localpath?this.coverimage.localpath:undefined);
+           
+            console.log('coverimage was deleted')
+            
+        }   
+} catch (error) {
+    
+}
+
+}
+
 userSchema.methods.generatePasswordResetToken= function (){
 
    const token = crypto.randomBytes(32).toString('hex') 
@@ -197,6 +230,19 @@ this.passwordChangeTokenExpiry= Date.now() + 10*60*1000;
 return token;   
 
 };
-        
+       
+userSchema.methods.generateEmailVerifyTokens= function(){
+
+const plainToken= crypto.randomBytes(32).toString('hex')
+const hashedToken= crypto.createHash('sha256').update(plainToken).digest('hex')
+
+const tokenExpiry= Date.now() + 1000*60*10
+
+this.emailVerificationToken=hashedToken
+this.emailVerificationTokenExpiry=tokenExpiry
+
+
+return plainToken
+}
 
 export const users= mongoose.model('users', userSchema );

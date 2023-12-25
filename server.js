@@ -1,14 +1,18 @@
 import {config} from 'dotenv';
-config({path: './config.env'});
-
+config({
+    path: './config.env',
+});
 process.on('uncaughtException', (err)=>{
-console.log(err.name, err.message);    
-console.log('Uncaught Exception occured! shutting down....');
-process.exit(1);
+    console.log(err.name, err.message);    
+    console.log('Uncaught Exception occured! shutting down....');
+    process.exit(1);
 });
 
 import {app} from './app.js'
 import dbConnect from './src/database/dbConnection.js'
+
+
+
 
 
 let server;

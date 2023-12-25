@@ -1,4 +1,4 @@
-import { fileDeleteFunction } from "../utils/fsFileDelete.js";
+import { fileDeleteFunction } from "../utils/helpers/fsFileDelete.js";
 
 export const asyncHandler= (requesthandler)=>{
  return (req, res, next)=>{

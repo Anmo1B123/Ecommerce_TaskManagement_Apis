@@ -1,11 +1,11 @@
 import utils  from 'util';
 import jwt from 'jsonwebtoken'
-import { asyncHandler } from './asyncHandler.js';
-import { users } from '../models/users.js';
-import apiError from '../utils/apiError.js';
-import { client } from '../database/redis.js';
+import { asyncHandler } from '../asyncHandler.js';
+import { users } from '../../models/users.js';
+import apiError from '../../utils/apiError.js';
+import { client } from '../../database/redis.js';
 
- const protect = asyncHandler ( async (req,res,next)=>{
+ const verifyJWT = asyncHandler ( async (req,res,next)=>{
  
     let token= req.headers.authorization || req.cookies?.accessToken;
 
@@ -87,4 +87,4 @@ return asyncHandler( async (req,res,next)=>{
 });
 };
 
-export {protect, ifAdmin};
+export {verifyJWT, ifAdmin};

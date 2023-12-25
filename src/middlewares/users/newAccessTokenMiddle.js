@@ -1,18 +1,18 @@
-import { asyncHandler } from "./asyncHandler.js"
-import { users } from "../models/users.js";
+import { asyncHandler } from "../asyncHandler.js"
+import { users } from "../../models/users.js";
 import utils  from 'util';
 import jwt from 'jsonwebtoken'
-import apiError from "../utils/apiError.js";
+import apiError from "../../utils/apiError.js";
 
 
 
-const newAccessTokenMiddleware = asyncHandler(async (req,res,next)=>{
+const newAccessTokenVerifyRefreshToken = asyncHandler(async (req,res,next)=>{
 
 let token= req.headers.authorization || req.cookies?.refreshToken;
             
 if(!token) throw new apiError('Token is required to access this route', 401);
             
-console.log(token)
+// console.log(token)
             
 /*CONDITION FOR TOKEN IN COOKIE */
 if (req.cookies?.refreshToken && token===req.cookies.refreshToken)
@@ -77,4 +77,4 @@ decoded doesn't exist so no need for one more conditional check for this. */
 });
 
 
-export {newAccessTokenMiddleware};
+export {newAccessTokenVerifyRefreshToken};

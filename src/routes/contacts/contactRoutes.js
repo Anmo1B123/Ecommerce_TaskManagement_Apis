@@ -1,5 +1,5 @@
 import {createContact, getAllContacts, getContactByPhoneNo, 
-        updateContactById, deleteContactById} from '../controllers/contactsController.js';
+        updateContactById, deleteContactById} from '../../controllers/contacts/contactsController.js';
 import { Router } from 'express';
 
 

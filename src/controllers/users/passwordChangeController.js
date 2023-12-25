@@ -1,9 +1,9 @@
-import { port } from "../../server.js";
-import { asyncHandler } from "../middlewares/asyncHandler.js";
-import { users } from "../models/users.js";
-import apiError from "../utils/apiError.js";
-import apiResponse from "../utils/apiResponse.js";
-import { sendEmail } from "../utils/nodemailer.js";
+import { port } from "../../../server.js";
+import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { users } from "../../models/users.js";
+import apiError from "../../utils/apiError.js";
+import apiResponse from "../../utils/apiResponse.js";
+import { sendPasswordResetEmail } from "../../utils/nodemailer.js";
 import crypto from "crypto"
 
 
@@ -19,18 +19,13 @@ if (!user) throw new apiError('User by this e-mail does not exist', 400);
 const token = user.generatePasswordResetToken();
 await user.save({validateBeforeSave:false})
 
-const pswdResetRoute= `${req.protocol}://${req.hostname}:${port}/api/v1/users/passwordReset/${token}`
 
-const message= `A password reset link has been sent as requested.\n ${pswdResetRoute} \n which will be valid for next 10 minutes`
+const name= `${user?.firstname} ${user?.lastname?user.lastname:""}`
+const link= `${req.protocol}://${req.hostname}:${port}/api/v1/users/passwordReset/${token}`
 
-const emailbody= {
-    email,
-    subject: 'Password Reset',
-    message
-}
 
 try {
-    await sendEmail(emailbody);
+    await sendPasswordResetEmail(name, email, link);
     res.status(200).json(new apiResponse(200, 'A password reset link is sent to the registered email-id. Please Check'));
 
 } catch (error) {
@@ -51,7 +46,7 @@ try {
 export const passwordReset=asyncHandler(async function(req,res){
 
 const {token=undefined}= req.params;
-if (!token) throw new apiError('Need password reset token to access this route', 403);
+if (!token) throw new apiError('Need password reset token to access this route', 401);
 
 const encryptedToken= crypto.createHash('sha256').update(token).digest('hex');
 console.log(encryptedToken);
@@ -64,8 +59,8 @@ if(!user) throw new apiError('Password reset token is invalid. Kindly Check your
 
 //Both of these are returing 13 digits by default -~ but decoded.iat returns 10 digits by default so have to act acordingly
 if (parseInt(user.passwordChangeTokenExpiry.getTime()) < Date.now()) {
-    console.log(parseInt(user.passwordChangeTokenExpiry.getTime()));
-    console.log(Date.now())
+    // console.log(parseInt(user.passwordChangeTokenExpiry.getTime()));
+    // console.log(Date.now())
 
     user.passwordChangeToken=undefined;
     user.passwordChangeTokenExpiry=undefined;

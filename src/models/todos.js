@@ -66,10 +66,18 @@ subTodos:{
 }, {timestamps:true});
 
 
-todoSchema.pre(/^find/, function(next){
+// todoSchema.pre(/^find/, function(next){
 
-    // console.log(this)
-    next()
-})
+//     // const req = this.req;
+//     console.log(req)
+//     this.find({createdBy:req.user._id});
+//     // console.log(this)
+//     next()
+// });
+
+todoSchema.statics.findbyAuthenticatedUser=function(user){
+
+    return this.find({createdBy:user._id});
+}
 
 export const todos= mongoose.model('todos', todoSchema);

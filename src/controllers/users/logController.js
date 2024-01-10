@@ -1,6 +1,6 @@
 import apiError from "../../utils/apiError.js";
 import { users } from "../../models/users.js";
-import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import apiResponse from "../../utils/apiResponse.js";
 import bcrypt from 'bcrypt'
 import { client } from "../../database/redis.js";
@@ -42,10 +42,12 @@ const login= asyncHandler(async (req, res)=> {
     // client.set('user:token:refresh', uniqueV2).then(()=>console.log('Refresh Token Version is saved in Redis'))
     //                                         .catch((err)=>console.log(err));
        
+    const oneDaySeconds= 24*60*60
+    const thirtyDaysSeconds= 30*24*60*60
 
     //ACCESS-TOKEN COOKIE MAXAGE=1D, REFRESH-TOKEN COOKIE MAXAGE=30D;
-    res.setHeader('Set-cookie', [`accessToken=${accessToken}; Max-Age=${Date.now()+ 24*60*60*1000}; Path=/; HttpOnly; Secure`, 
-                                `refreshToken=${refreshToken}; Max-Age=${Date.now()+ 30*24*60*60*1000};Path=/; HttpOnly; Secure`])
+    res.setHeader('Set-cookie', [`accessToken=${accessToken}; Max-Age=${oneDaySeconds}; Path=/; HttpOnly; Secure`, 
+                                `refreshToken=${refreshToken}; Max-Age=${thirtyDaysSeconds};Path=/; HttpOnly; Secure`])
     
     res.status(200).json(new apiResponse(200, 'success-kindly check the Token', {accessToken, refreshToken}));
 
@@ -62,8 +64,10 @@ const handleSocialLogin = asyncHandler(async (req, res)=>{
     await user.save({validateBeforeSave:false});
 
     //ACCESS-TOKEN COOKIE MAXAGE=1D, REFRESH-TOKEN COOKIE MAXAGE=30D;
-    res.setHeader('Set-cookie', [`accessToken=${accessToken}; Max-Age=${Date.now()+ 24*60*60*1000}; Path=/; HttpOnly; Secure`, 
-    `refreshToken=${refreshToken}; Max-Age=${Date.now()+ 30*24*60*60*1000};Path=/; HttpOnly; Secure`])
+    const oneDaySeconds= 24*60*60
+    const thirtyDaysSeconds= 30*24*60*60
+    res.setHeader('Set-cookie', [`accessToken=${accessToken}; Max-Age=${oneDaySeconds}; Path=/; HttpOnly; Secure`, 
+    `refreshToken=${refreshToken}; Max-Age=${thirtyDaysSeconds};Path=/; HttpOnly; Secure`])
     
     //WE CAN ALSO REDIRECT THE USER TO THE FRONTEND URL IF CLIENT IS NOT USING COOKIES WITH THE ACCESS & REFRESH TOKEN IN THE URL AS QUERY PARAMS
     //THAT URL WHICH FRONTEND WANTS.

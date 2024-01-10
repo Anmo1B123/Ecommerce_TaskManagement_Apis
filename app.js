@@ -7,7 +7,12 @@ import userRoutes from './src/routes/users/userRoutes.js';
 import todosRoutes from './src/routes/todos/todoRoutes.js'
 import contactRoutes from './src/routes/contacts/contactRoutes.js'
 
-import { errorHandler } from './src/middlewares/errorHandler.js';
+import ecomProfileRoutes from './src/routes/Ecom/profile.route.js'
+import ecomAddressRoutes from './src/routes/Ecom/address.route.js'
+import ecomProductRoutes from './src/routes/Ecom/product.route.js'
+
+
+import { errorHandler } from './src/middlewares/Handlers/errorHandler.js';
 import cookieParser from 'cookie-parser';
 import session from 'express-session'
 import apiResponse from './src/utils/apiResponse.js';
@@ -44,12 +49,20 @@ app.use('/api/v1/users', userRoutes);
 // 2. Todos Routes
 app.use('/api/v1/todos', todosRoutes);
 
-
 // 3. Contacts Routes
 app.use('/api/v1/contacts', contactRoutes);
 
+// 4. Ecom Routes
+app.use('/api/v1/ecom', ecomProfileRoutes);
+app.use('/api/v1/ecom', ecomAddressRoutes);
+app.use('/api/v1/ecom', ecomProductRoutes);
 
-// 4. For login with google
+
+
+
+
+
+// 5. For login with google
 app.get('/', (req, res)=>{
     res.send('<a href=/auth/google> Login with Google </a>')
 });

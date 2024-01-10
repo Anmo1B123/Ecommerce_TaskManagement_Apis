@@ -1,4 +1,4 @@
-import { fileDeleteFunction } from "../utils/helpers/fsFileDelete.js";
+import { fileDeleteFunction } from "../../utils/helpers/fsFileDelete.js";
 
 function deverror (error, res) {
     error.status=error.statuscode>=400 && error.statuscode<500? 'fail':'error'
@@ -33,7 +33,7 @@ if(error.isOperational){
           return res.status(500).json({
                 success: false,
                 status: 'error',
-                message:'something went wrong'
+                message:'Something went wrong'
             })
         }
 

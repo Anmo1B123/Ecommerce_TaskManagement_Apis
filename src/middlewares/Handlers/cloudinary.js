@@ -9,15 +9,15 @@ cloudinary.config({
   secure: true,
 });
 
-export const uploadOnCloudinary= async function(localfilepath, public_id=undefined){
+export const uploadOnCloudinary= async function(localfilepath, folder ,public_id=undefined){
 
 try{  
                                                                                                  //public_id as an argument will come- would be a string and then that name will be shown on cloudinary
     if (localfilepath){
         
-        const response = await cloudinary.uploader.upload(localfilepath, {public_id:public_id,
-            resource_type: "auto"});
-        if(response)console.log('file uploaded sucessfully', response?.url + ` <=that is the url`);
+        const response = await cloudinary.uploader.upload(localfilepath, {folder:`${folder}` , public_id:public_id, 
+            resource_type: "image"});
+        if(response)console.log(`file uploaded sucessfully in folder ${folder}`, response?.url + ` <=that is the url`);
         
         return response;
     }
@@ -32,7 +32,7 @@ try{
 
     fs.unlinkSync(localfilepath);
     console.log('Local file removed due to error in Uploading On Cloudinary')
-    return;
+    return false;
 
 }
     

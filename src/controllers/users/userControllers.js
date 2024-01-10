@@ -2,8 +2,8 @@ import fs from 'fs';
 import {users} from "../../models/users.js"
 import apiResponse from '../../utils/apiResponse.js';
 import apiError from '../../utils/apiError.js';
-import { uploadOnCloudinary } from "../../middlewares/fileHandlers/cloudinary.js";
-import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { uploadOnCloudinary } from "../../middlewares/Handlers/cloudinary.js";
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import { uniqueIdUserSpecificGenerator } from "../../utils/helpers/uniqueIdGenerator.js";
 import { fileDeleteFunction } from '../../utils/helpers/fsFileDelete.js';
 import mongoose from 'mongoose';
@@ -24,7 +24,7 @@ else
 {           
 
 
-        let query= new apiFeatures(users.find(), req.query).filter().sort().fields().pagination();
+        let query= new apiFeatures(users.find(), req.query).search().sort().fields().pagination();
         
         console.log('docsCount here' + query.docsCount);
 
@@ -49,6 +49,7 @@ object from this.queryObj for "this.queryObj.count()" to work as this.queryObj w
       
 }    
 });
+
 
 const createNewUser= asyncHandler(async (req, res)=>{
     
@@ -96,13 +97,13 @@ if([username, firstname, lastname,
         if (!avatarfilepath) throw new apiError('avatar field is required', 404);
                                                                       
             
-        const avatar= await uploadOnCloudinary(avatarfilepath);
+        const avatar= await uploadOnCloudinary(avatarfilepath, "users/avatar");
 
             const avatarPublicId= avatar.public_id;
             const avatarUrl =avatar?.url;
                    
                    
-        const coverimage= await uploadOnCloudinary(coverimagefilepath);
+        const coverimage= await uploadOnCloudinary(coverimagefilepath, "users/coverimage");
 
             const coverimagePublicId= coverimage?.public_id;
             const coverimageurl =coverimage?.url;
@@ -125,7 +126,10 @@ if([username, firstname, lastname,
                                             coverimage: coverimageObjFields, 
                                             role:req.body.role?req.body.role:undefined })
                     
-            res.status(200).json(new apiResponse(200, 'success', user));
+    if(!user) throw new apiError('Something went wrong while registering the user. Try again later',500)
+            
+    await user.createEcomProfile
+    res.status(200).json(new apiResponse(200, 'success', user));
 
 });
 
@@ -266,6 +270,7 @@ const deleteUser= asyncHandler(async (req, res, next)=>{
  
 });
 
+
 const getCurrentUser= asyncHandler(async (req,res)=>{
 
 const user= await users.findById(req.user?._id);
@@ -275,6 +280,7 @@ if(!user) throw new apiError('user not found', 404);
 res.status(200).json(new apiResponse(200, 'Success', user))
 
 });
+
 
 const updatePassword= asyncHandler(async (req,res)=>{
 
@@ -307,6 +313,7 @@ res.status(200).json(new apiResponse(200, 'Password has been updated'))
 
 });
 
+
 const updateAvatar= asyncHandler(async(req, res)=>{
 
 const user= await users.findById(req.user?._id)
@@ -317,7 +324,7 @@ const avatarfilepath = req.file?.path
 
 if(!avatarfilepath) throw new apiError('An Image for Avatar is required', 400);
 
-const response = await uploadOnCloudinary(avatarfilepath)
+const response = await uploadOnCloudinary(avatarfilepath, "users/avatar")
 if(!response) throw new apiError('Something went wrong while updating the avatar. Try again later',500)
 
 const uniqueId= uniqueIdUserSpecificGenerator();
@@ -337,6 +344,7 @@ const avatarFields={
 
 });
 
+
 const updateCoverImage= asyncHandler(async(req,res)=>{
 
     const user= await users.findById(req.user?._id)
@@ -347,7 +355,7 @@ const coverimagefilepath = req.file?.path
 
 if(!coverimagefilepath) throw new apiError('A coverimage is required to update', 400);
 
-const response = await uploadOnCloudinary(coverimagefilepath)
+const response = await uploadOnCloudinary(coverimagefilepath, "users/coverimage")
 if(!response) throw new apiError('Something went wrong while updating the coverimage. Try again later',500)
 
 const uniqueId= uniqueIdUserSpecificGenerator();
@@ -368,6 +376,7 @@ const coverimageFields={
 
 
 });
+
 
 const deleteCoverImage= asyncHandler(async(req,res)=>{
 

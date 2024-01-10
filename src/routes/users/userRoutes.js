@@ -10,7 +10,7 @@ import { newAccessToken } from "../../controllers/users/newAccessTokenGeneration
 import {passwordForgot, passwordReset} from '../../controllers/users/passwordChangeController.js'
 
 // IMPORTING REQUIRED MIDDLEWARES 
-import {upload} from '../../middlewares/fileHandlers/multer.js';
+import {upload} from '../../middlewares/Handlers/multer.js';
 import { emailSymbolChecker } from "../../middlewares/users/emailsymbolChecker.js";
 import { ifAdmin, verifyJWT } from "../../middlewares/users/authorization.js";
 import { newAccessTokenVerifyRefreshToken } from "../../middlewares/users/newAccessTokenMiddle.js";

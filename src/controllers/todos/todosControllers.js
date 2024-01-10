@@ -1,4 +1,4 @@
-import { asyncHandler } from "../../middlewares/asyncHandler.js"
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
 import { todos } from "../../models/todos.js";
 import apiError from '../../utils/apiError.js'
 import {apiFeatures} from '../../utils/apiFeatures.js'
@@ -45,7 +45,7 @@ const getAllTodos = asyncHandler(async (req,res)=>{
    else
    {
 
-    const query= new apiFeatures(todos.findbyAuthenticatedUser(req.user), req.query).filter().pagination().sort().fields();
+    const query= new apiFeatures(todos.findbyAuthenticatedUser(req.user), req.query).search().pagination().sort().fields();
 
     const   documentsCount  =     await query.docsCount;
     const   docsOnThisPage  =     await query.docsOnthisPage;

@@ -1,4 +1,4 @@
-import { asyncHandler } from "../../middlewares/asyncHandler.js"
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
 
 
 

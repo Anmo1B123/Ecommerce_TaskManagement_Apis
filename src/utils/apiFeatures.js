@@ -1,3 +1,4 @@
+import { products } from "../models/Ecom/product.js";
 import { users } from "../models/users.js";
 import apiError from "./apiError.js";
 
@@ -21,9 +22,9 @@ if (skip >= count) throw new apiError('Page not found', 400)
 
 }
 
-filter(){
+search(){
 
-    let exclusions= ['sort', 'page', 'limit', 'fields']
+    let exclusions= ['sort', 'page', 'limit', 'fields', 'filters']
     const querystrobj= {...this.queryString};
     console.log(querystrobj);
     exclusions.forEach((el)=>{
@@ -35,12 +36,23 @@ filter(){
 
     let querystr =JSON.stringify(querystrobj)
 
-    querystr= querystr.replace(/\b(gt|gte|lt|lte|in)\b/ig, (match)=>'$'+match);
+    // NO NEED FOR NOW -> querystr= querystr.replace(/\b(gt|gte|lt|lte|in)\b/ig, (match)=>'$'+match);
 
     querystr=JSON.parse(querystr)
 
-    this.queryObj= users.find(querystr);
-    this.docsCount=users.find(querystr).count();
+    let regexQuery={};
+
+    Object.entries(querystr).forEach((key_Values)=>{
+        const key= key_Values[0]
+        const value= key_Values[1]
+
+        regexQuery[key]= {$regex: new RegExp(`^${value}`, 'i')}
+
+    })
+
+
+    this.queryObj= users.find(regexQuery);
+    this.docsCount=users.find(regexQuery).count();
 
     return this;
 }
@@ -90,4 +102,64 @@ console.log(this.docsCount + 'hey')
 
 return this;
 }
+}
+
+
+export class productApiFeatures extends apiFeatures{
+
+constructor(queryObj, queryString){
+super(queryObj);
+super(queryString);
+}
+
+static pageErrorfunc(documentCount, req){
+
+    const page= parseInt(req.query.page) || 1;
+    
+    const limit= parseInt(req.query.limit) || 5;
+    
+    const skip= (page-1)*limit
+
+    let count=  documentCount
+if (skip >= count) throw new apiError('Page not found', 400)
+    
+}
+
+search(){
+
+   super.search()
+    
+};
+
+filters(){
+
+    const {minPrice=undefined} = this.queryString.filters
+    const {maxPrice=undefined} = this.queryString.filters
+    const {category=undefined} = this.queryString.filters
+
+    const categoyArr = category.split(',');
+
+   this.queryObj= this.queryObj.find({price:{$gte:minPrice?minPrice:0, $lte: maxPrice?maxPrice:1000000000}, 
+                                    preDefinedCategories:{$in:categoyArr}})
+
+   return this;
+
+};
+
+sort(){
+
+    super.sort()
+};
+
+fields(){
+
+    super.fields()
+};
+
+pagination(){
+
+    super.pagination()
+};
+
+
 }

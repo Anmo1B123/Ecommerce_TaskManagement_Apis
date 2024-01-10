@@ -9,6 +9,7 @@ import { uniqueIdUserSpecificGenerator } from "../utils/helpers/uniqueIdGenerato
 import crypto from 'crypto';
 import { response } from "express";
 import { client } from "../database/redis.js";
+import { ecomProfile } from "./Ecom/profile.js";
 
 
 const userSchema= new Schema ({
@@ -108,6 +109,32 @@ this.confirmPassword=undefined;
 console.log('a new password has been saved ')
 return next();
 });
+
+
+userSchema.methods.createEcomProfile=  async function(){
+
+    const firstname= this.firstname
+    const lastname= this.lastname?this.lastname:undefined
+    const userId= this._id
+
+    await ecomProfile.create({firstname, lastname, owner:userId})
+
+}
+
+// ADDING A POST HOOK TO AUTOMATICALLY CREATE THE USER'S ECOM-PROFILE WHEN USER REGISTERS
+// userSchema.post('save', async function(userDoc, next){
+
+//     const firstname= userDoc.firstname
+//     const lastname= userDoc.lastname?userDoc.lastname:undefined
+//     const userId= userDoc._id
+
+//     await ecomProfile.create({firstname, lastname, owner:userId})
+
+//     next()
+
+// });
+
+
 
 userSchema.methods.isPasswordCorrect= async function(password){
    

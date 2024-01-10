@@ -1,4 +1,4 @@
-import { asyncHandler } from "../../middlewares/asyncHandler.js"
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
 import { users } from "../../models/users.js";
 import utils  from 'util';
 import jwt from 'jsonwebtoken'
@@ -23,7 +23,8 @@ try {
     // req.session.access=uniqueV1; //updating the session.access property with new unique-version of access-token.
     
     //OVERWRITING THE ACCESSTOKEN COOKIE VALUE WITH THE NEW ACCESSTOKEN//
-    res.setHeader('Set-cookie', `accessToken=${accessToken}; Max-Age=${Date.now()+ 24*60*60*1000}; Path=/; HttpOnly; Secure`)
+    const oneDaySeconds= 24*60*60
+    res.setHeader('Set-cookie', `accessToken=${accessToken}; Max-Age=${oneDaySeconds}; Path=/; HttpOnly; Secure`)
     
     //SENDING THE NEW ACCESS TOKEN IN RESPONSE AS WELL//
     res.status(200).json(new apiResponse(201, 'A new access-token has been sent',accessToken))

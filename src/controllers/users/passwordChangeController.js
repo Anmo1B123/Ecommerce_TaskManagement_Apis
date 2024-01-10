@@ -1,5 +1,5 @@
 import { port } from "../../../server.js";
-import { asyncHandler } from "../../middlewares/asyncHandler.js";
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import { users } from "../../models/users.js";
 import apiError from "../../utils/apiError.js";
 import apiResponse from "../../utils/apiResponse.js";

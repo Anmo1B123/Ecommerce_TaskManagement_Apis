@@ -1,6 +1,6 @@
 import utils  from 'util';
 import jwt from 'jsonwebtoken'
-import { asyncHandler } from '../asyncHandler.js';
+import { asyncHandler } from '../Handlers/asyncHandler.js';
 import { users } from '../../models/users.js';
 import apiError from '../../utils/apiError.js';
 import { client } from '../../database/redis.js';

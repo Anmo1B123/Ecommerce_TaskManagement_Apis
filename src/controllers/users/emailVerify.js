@@ -36,7 +36,8 @@ try {
 } catch (error) {
     user.emailVerificationToken=undefined;
     user.emailVerificationTokenExpiry=undefined;
-    console.log(error)
+await user.save({validateBeforeSave:false}) 
+   // console.log(error)//
     throw new apiError('Something went wrong while sending email verification mail. Please try again later',500)
     
 }

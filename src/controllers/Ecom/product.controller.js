@@ -53,7 +53,11 @@ const getAllProducts_S = asyncHandler(async(req, res)=>{
     const productArr=  await products.aggregate([
                                                 {
                                                     $match: {
-                                                            seller:req.user?._id
+                                                            /* seller:req.user?._id :- DON'T DO THIS bcoz- aggregate method is being worked directly of mongodb driver not mongoose so automatic conversion to mongo object id from string id won't happen. So use below code for the same. */
+
+seller: new mongoose.Types.ObjectId(req.user?._id) 
+
+/* The above code will create a new instance of the type mongodb Id from the string. */
                                                             }
                                                 },
                                                 {

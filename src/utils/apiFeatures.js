@@ -51,8 +51,11 @@ search(){
     })
 
 
-    this.queryObj= users.find(regexQuery);
-    this.docsCount=users.find(regexQuery).count();
+    this.queryObj= this.queryObj.find(regexQuery);
+   
+
+/* should use a dynamic variable for count in place of users model in the below code */
+ this.docsCount=users.find(regexQuery).count();
 
     return this;
 }

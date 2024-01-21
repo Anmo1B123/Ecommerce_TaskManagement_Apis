@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
 
   const filefilter = (req, file, cb)=>{
 
-    if(file.mimetype.startsWith('video/')) cb(new apiError('videos are not allowed'), null);
+    if(file.mimetype.startsWith('video/')) cb(new apiError('videos are not allowed'), false);
 
     cb(null, true);
 

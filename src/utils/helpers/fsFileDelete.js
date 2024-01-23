@@ -24,6 +24,82 @@ else
 }
 
 }
+
+
+export const fileDeleteFunctionOnError = (req)=>{
+
+    if (req.file || req.files) {
+
+        const multerPath = req.file?.path
+        const multerPathArray=[];
+        if(req.files !== undefined){ 
+            
+            if(typeof req.files==='object'){
+
+                if(!Array.isArray(req.files)){
+                
+                    const valuesArr= Object.values(req.files)
+
+                        valuesArr.forEach((innerArr)=>{
+                    
+                            innerArr.forEach((innerArrFileObject)=>{
+                            
+                                multerPathArray.push(innerArrFileObject.path)
+
+                            })
+
+                        });
+                }
+                else{
+                    if(req.files.length > 0){
+                    req.files.forEach((fileObj)=>{
+
+                        multerPathArray.push(fileObj.path);
+
+                    })
+                    }
+
+                }
+            }
+
+        }
+
+        if(multerPath) fileDeleteFunction(multerPath);
+        if(multerPathArray.length !== 0){
+
+            multerPathArray.forEach((path)=> fileDeleteFunction(path))
+            
+        }
+
+    }    
+
+//     if(req.files && typeof req.files==='object')
+// {
+    
+//     const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
+//     const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
+//     if((avatarfilepath && coverimagefilepath) || avatarfilepath){fileDeleteFunction(avatarfilepath, coverimagefilepath);}
+// }
+
+// if(req.file){
+
+//     if(req.file?.fieldname==='avatar'){
+    
+//         const avatarfilepath= req.file?.path
+//         fileDeleteFunction(avatarfilepath)
+//     }else if (req.file?.fieldname==='coverimage'){
+//         const coverimagefilepath= req.file?.path
+//         fileDeleteFunction(coverimagefilepath)
+//     }
+// }
+
+
+// }
+
+}
+
+
+
 /****************************************/
 /* DATE-08/12/2023
 

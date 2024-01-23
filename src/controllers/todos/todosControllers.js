@@ -1,5 +1,5 @@
 import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
-import { todos } from "../../models/todos.js";
+import { initializePreFindHookFunc, todos } from "../../models/todos.js";
 import apiError from '../../utils/apiError.js'
 import {apiFeatures} from '../../utils/apiFeatures.js'
 import apiResponse from '../../utils/apiResponse.js'
@@ -31,13 +31,18 @@ console.log(datedue)
 
 const getAllTodos = asyncHandler(async (req,res)=>{
 
+    initializePreFindHookFunc(req);
+
    if(Object.keys(req.query).length ===0)
    {
 
     console.log('hey')
         // todos.find()
         // const todos= await todos.find({createdBy: req.user._id}).sort('-createdAt');
-       const allTodos= await todos.findbyAuthenticatedUser(req.user).sort('-createdAt');
+
+       
+    //    const allTodos= await todos.findbyAuthenticatedUser(req.user).sort('-createdAt');
+       const allTodos= await todos.find().sort('-createdAt');
        
         res.status(200).json(new apiResponse(200, 'Success', {Length:allTodos.length,allTodos}));
 

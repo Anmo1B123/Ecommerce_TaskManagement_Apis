@@ -4,8 +4,7 @@ import apiError from '../../../utils/apiError.js';
 
 Array.prototype.isEmpty=function(){
 
-    if(this.length === 0 ) return true
-    return false
+    return this.length === 0
 }; //I PROBABLY SHOULD NOT DO THIS.....
 
 export const createAddressValidation = ()=>{
@@ -25,8 +24,9 @@ export const updateAddressValidation= ()=>{
 
    const validationChainArray = createAddressValidation(); // Thought of using the above function to save time.
 
-   return validationChainArray.unshift(param('id').isMongoId().withMessage('Not a valid id'))
+    validationChainArray.unshift(param('id').isMongoId().withMessage('Not a valid id'))
 
+    return validationChainArray
 
 };
 

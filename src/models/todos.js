@@ -65,15 +65,19 @@ subTodos:{
     
 }, {timestamps:true});
 
+let preFindHookFunc= function(){};
+export function initializePreFindHookFunc (requestObject) {
 
-// todoSchema.pre(/^find/, function(next){
+    preFindHookFunc=function(next){
 
-//     // const req = this.req;
-//     console.log(req)
-//     this.find({createdBy:req.user._id});
-//     // console.log(this)
-//     next()
-// });
+            const req = requestObject;
+            this.find({createdBy:req.user._id});
+            next()
+        }
+
+}
+
+todoSchema.pre(/^find/, preFindHookFunc);
 
 todoSchema.statics.findbyAuthenticatedUser=function(user){
 

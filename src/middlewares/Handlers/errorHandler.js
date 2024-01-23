@@ -1,4 +1,4 @@
-import { fileDeleteFunction } from "../../utils/helpers/fsFileDelete.js";
+import { fileDeleteFunction, fileDeleteFunctionOnError } from "../../utils/helpers/fsFileDelete.js";
 
 function deverror (error, res) {
     error.status=error.statuscode>=400 && error.statuscode<500? 'fail':'error'
@@ -55,27 +55,30 @@ const errorHandler= (error, req, res, next)=>{
 
     }
 
-    if(req.files)
-{
-    const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
-    const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
-    if((avatarfilepath && coverimagefilepath) || avatarfilepath){fileDeleteFunction(avatarfilepath, coverimagefilepath);}
-}
 
-if(req.file){
+    fileDeleteFunctionOnError(req);
 
-    if(req.file?.fieldname==='avatar'){
+//     if(req.files && typeof req.files==='object')
+// {
     
-        const avatarfilepath= req.file?.path
-        fileDeleteFunction(avatarfilepath)
-    }else if (req.file?.fieldname==='coverimage'){
-        const coverimagefilepath= req.file?.path
-        fileDeleteFunction(coverimagefilepath)
-    }
-}
+//     const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
+//     const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
+//     if((avatarfilepath && coverimagefilepath) || avatarfilepath){fileDeleteFunction(avatarfilepath, coverimagefilepath);}
+// }
 
-//Shifted this code to last because its synchronous and I don't want to block the main thread and error response
-//Or I can modify the file delete function to use the asynchronous version of fs.unlink to offload to thread pool/background.
+// if(req.file){
+
+//     if(req.file?.fieldname==='avatar'){
+    
+//         const avatarfilepath= req.file?.path
+//         fileDeleteFunction(avatarfilepath)
+//     }else if (req.file?.fieldname==='coverimage'){
+//         const coverimagefilepath= req.file?.path
+//         fileDeleteFunction(coverimagefilepath)
+//     }
+// }
+
+//used the asynchronous version of fs.unlink (CHECK_THE_FILE) to offload to thread pool/background.
 }
 
 export {errorHandler}

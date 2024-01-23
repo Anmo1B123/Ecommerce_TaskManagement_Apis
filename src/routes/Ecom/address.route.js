@@ -11,8 +11,8 @@ const route = Router();
 route.route('/address').get(getAllAddress)
                        .post(createAddressValidation(),validationResultHandler,createAddress);
                        
-route.route('/adress/:id').get(getAddressById)
-                          .patch(updateAddressValidation(),validationResultHandler,updateAddressById)
+route.route('/address/:id').get(getAddressById)
+                          .patch(updateAddressValidation(), validationResultHandler,updateAddressById)
                           .delete(deleteAddressById);
 
 export default route;

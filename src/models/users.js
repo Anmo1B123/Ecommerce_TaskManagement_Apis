@@ -198,7 +198,12 @@ try {
         const userCoverimagefilepath=this.coverimage?.localpath?this.coverimage?.localpath:null;
         if(userAvatarfilepath || userCoverimagefilepath)
         {
-            fileDeleteFunction(userAvatarfilepath,userCoverimagefilepath);
+
+           try {
+             await fileDeleteFunction(userAvatarfilepath,userCoverimagefilepath);
+           } catch (error) {
+            console.log("an error occured with user file delete method "+ error);
+           }
         }
         
         if(this.avatar.publicId && !this.coverimage?.publicId)

@@ -6,6 +6,8 @@ import apiResponse from "../../utils/apiResponse.js";
 import apiError from "../../utils/apiError.js";
 import { category } from "../../models/Ecom/category.js";
 import { uploadOnCloudinary } from "../../middlewares/Handlers/cloudinary.js";
+import { fileDeleteFunction } from "../../utils/helpers/fsFileDelete.js";
+import { v2 as cloudinary} from "cloudinary";
 
 
 
@@ -314,6 +316,10 @@ const updateProductMainImageById = asyncHandler(async(req, res)=>{
     }
 
 
+    fileDeleteFunction(foundProduct.mainImage.localpath).then(()=>{
+        cloudinary.uploader.destroy(foundProduct.mainImage.publicId)
+    }).catch();
+    
     foundProduct.mainImage= mainImageObj;
 
     await foundProduct.save();
@@ -324,13 +330,13 @@ const updateProductMainImageById = asyncHandler(async(req, res)=>{
 });
 
 
-const updateProductSubImagesById = asyncHandler(async(req, res)=>{
+const updateProductSubImageById = asyncHandler(async(req, res)=>{
 
     const {id} = req.params;
 
     if(! mongoose.Types.ObjectId.isValid(id)) throw new apiError('Not a valid Id', 400);
 
-    const subImagesFilePath =  req.files?.path;
+    const subImagesFilePath =  req.file?.path;
 
     if (!subImagesFilePath) throw new apiError('Sub images for the product is required', 400);
 
@@ -352,7 +358,7 @@ const updateProductSubImagesById = asyncHandler(async(req, res)=>{
         localpath: mainImagefilepath
     }
 
-
+    fileDeleteFunction(foundProduct.mainImage.localpath)
     foundProduct.mainImage= mainImageObj;
 
     await foundProduct.save();
@@ -361,6 +367,34 @@ const updateProductSubImagesById = asyncHandler(async(req, res)=>{
 
 
 });
+
+const addSubImagesToProductById = asyncHandler(async (req, res)=>{
+
+    const {productId} = req.params
+
+    const foundProduct = await products.findOne({seller:req.user?._id, _id:productId});
+
+    if(!foundProduct) throw new apiError('No product found by this id', 404);
+
+    const existingSubImagesLength = foundProduct.subImages.length;
+
+    if((req.files?.length + existingSubImagesLength) > 4) throw new apiError(
+                                                        `Maximum 4 photos are allowed. You can upload 
+                                                        ${4-existingSubImagesLength} more`, 400);
+
+
+    let subImagesPath=[]
+
+    req.files.forEach((subImageObj)=>{
+
+
+
+    })
+    
+
+});
+
+
 
 
 const deleteProductSubImageById= asyncHandler(async(req, res)=>{
@@ -388,40 +422,12 @@ const deleteProductSubImageById= asyncHandler(async(req, res)=>{
 });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export {getAllProducts}
+export {getAllProducts_B,
+    getAllProducts_S,
+    createProduct_S,
+    getProductById_S,
+    updateProductDetailsById,
+    updateProductMainImageById,
+    updateProductSubImageById,
+    addSubImagesToProductById,
+    deleteProductSubImageById}

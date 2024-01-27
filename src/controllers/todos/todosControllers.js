@@ -1,3 +1,4 @@
+import moment from "moment";
 import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
 import { initializePreFindHookFunc, todos } from "../../models/todos.js";
 import apiError from '../../utils/apiError.js'
@@ -14,14 +15,15 @@ const {title=undefined, content="", duedate=undefined, priority=undefined} = req
     
 if([title,duedate].some((field)=>field===undefined || field.trim()==="")) throw new apiError('title and duedate is required',400);
 
-const duedateStr= `${duedate}`
-const datedue = new Date(duedateStr)
+    const duedateStr= `${duedate}`
+    const modifiedDate = moment(duedateStr, 'DD/MM/YY').startOf('day')
+    const isoDate = modifiedDate.toISOString()
 
 console.log(datedue)
             const todo= await todos.create({
                                             title,
                                             content,
-                                            duedate:datedue,
+                                            duedate:isoDate,
                                             priority,
                                             createdBy:req.user._id
                                             })

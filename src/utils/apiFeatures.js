@@ -25,8 +25,11 @@ if (skip >= count) throw new apiError('Page not found', 400)
 search(){
 
     let exclusions= ['sort', 'page', 'limit', 'fields', 'filters']
-    const querystrobj= {...this.queryString};
-    console.log(querystrobj);
+    const querystrobj= structuredClone(this.queryString);
+
+    //used global method structured clone for deep cloning for future nested objects
+
+    // console.log(querystrobj);
     exclusions.forEach((el)=>{
 
         delete querystrobj[el]
@@ -111,21 +114,12 @@ return this;
 export class productApiFeatures extends apiFeatures{
 
 constructor(queryObj, queryString){
-super(queryObj);
-super(queryString);
-}
+super(queryObj, queryString);
+} // due to Es6 we can skip using constructor and and super, the child class will automatically do the job. 
 
 static pageErrorfunc(documentCount, req){
 
-    const page= parseInt(req.query.page) || 1;
-    
-    const limit= parseInt(req.query.limit) || 5;
-    
-    const skip= (page-1)*limit
-
-    let count=  documentCount
-if (skip >= count) throw new apiError('Page not found', 400)
-    
+    super.pageErrorfunc(documentCount, req)
 }
 
 search(){
@@ -136,14 +130,21 @@ search(){
 
 filters(){
 
-    const {minPrice=undefined} = this.queryString.filters
-    const {maxPrice=undefined} = this.queryString.filters
-    const {category=undefined} = this.queryString.filters
+    const {minPrice=undefined, maxPrice=undefined, category=undefined} = this.queryString.filters
 
-    const categoyArr = category.split(',');
+    const categoyArr = category?.split(',');
 
-   this.queryObj= this.queryObj.find({price:{$gte:minPrice?minPrice:0, $lte: maxPrice?maxPrice:1000000000}, 
-                                    preDefinedCategories:{$in:categoyArr}})
+    let tempQueryObj = this.queryObj.where('price').gte(minPrice?minPrice:0).lte(maxPrice?maxPrice:1000000000)
+
+
+    if(categoyArr.length > 0){
+
+        tempQueryObj=tempQueryObj.where('preDefinedCategories').in(categoyArr)
+    }
+
+    this.queryObj= tempQueryObj
+//    this.queryObj= this.queryObj.find({price:{$gte:minPrice?minPrice:0, $lte: maxPrice?maxPrice:1000000000}, 
+//                                     preDefinedCategories:{$in:categoyArr}})
 
    return this;
 

@@ -151,7 +151,7 @@ seller: new mongoose.Types.ObjectId(req.user?._id)
 })
 
 
-const createProduct_S = asyncHandler(async(req, res)=>{
+const createProduct_S = asyncHandler(async(req, res, next)=>{
 
     
     const {name, description, price, stock, preDefinedCategories, sellerDefinedCategory} = req.body
@@ -166,6 +166,8 @@ const createProduct_S = asyncHandler(async(req, res)=>{
     
     const mainImageUrl = response?.url
     const mainImagePublicId= response?.public_id 
+
+    req.cloudinaryPublicIds= [mainImagePublicId];
 
     const mainImageObj = {
 
@@ -190,19 +192,48 @@ const createProduct_S = asyncHandler(async(req, res)=>{
 
         if(subImagesfilepathArr.length){
 
-            subImagesfilepathArr.forEach(async (current_loop_path)=>{
+                for (const current_loop_path of subImagesfilepathArr) {
 
-                const response = await uploadOnCloudinary(current_loop_path, "products/sub-images");
-                const subImageUrl = response?.url;
-                const subImagePublicId= response?.public_id;
+                    try {
+                        const response = await uploadOnCloudinary(current_loop_path, "products/sub-images");
+                        
+                    if(!response.url){
+                            
+                        throw new apiError('something went wrong while saving the image, try again later',500)
+    
+                    }
+    
+                        const subImageUrl = response?.url;
+                        const subImagePublicId= response?.public_id;
 
-                subImagesArrayOfSubImagesObj.push({
-                                                    url:subImageUrl, 
-                                                    publicId: subImagePublicId,
-                                                    localpath:current_loop_path
-                                                });
+                        req.cloudinaryPublicIds.push(subImagePublicId);
 
-            })
+                        subImagesArrayOfSubImagesObj.push({
+                            url:subImageUrl, 
+                            publicId: subImagePublicId,
+                            localpath:current_loop_path
+                        });
+
+                    } catch (error) {
+                        next(error);
+                        break;
+                    }
+                    
+                }
+
+            // subImagesfilepathArr.forEach(async (current_loop_path)=>{
+
+            //     const response = await uploadOnCloudinary(current_loop_path, "products/sub-images");
+            //     const subImageUrl = response?.url;
+            //     const subImagePublicId= response?.public_id;
+
+            //     subImagesArrayOfSubImagesObj.push({
+            //                                         url:subImageUrl, 
+            //                                         publicId: subImagePublicId,
+            //                                         localpath:current_loop_path
+            //                                     });
+
+            // })
         }
 
     }
@@ -308,6 +339,8 @@ const updateProductMainImageById = asyncHandler(async(req, res)=>{
                     'Something went wrong while updating the product main-image. Try again later.',500
                                         );
 
+    req.cloudinaryPublicIds= [response.public_id];
+
     const mainImageObj = {
 
         url: response.url,
@@ -316,8 +349,8 @@ const updateProductMainImageById = asyncHandler(async(req, res)=>{
     }
 
 
-    fileDeleteFunction(foundProduct.mainImage.localpath).then(()=>{
-        cloudinary.uploader.destroy(foundProduct.mainImage.publicId)
+    fileDeleteFunction(foundProduct.mainImage.localpath).then(async()=>{
+        await cloudinary.uploader.destroy(foundProduct.mainImage.publicId)
     }).catch();
     
     foundProduct.mainImage= mainImageObj;
@@ -332,41 +365,65 @@ const updateProductMainImageById = asyncHandler(async(req, res)=>{
 
 const updateProductSubImageById = asyncHandler(async(req, res)=>{
 
-    const {id} = req.params;
+    const {id, subImageId} = req.params;
 
     if(! mongoose.Types.ObjectId.isValid(id)) throw new apiError('Not a valid Id', 400);
 
     const subImagesFilePath =  req.file?.path;
 
-    if (!subImagesFilePath) throw new apiError('Sub images for the product is required', 400);
+    if (!subImagesFilePath) throw new apiError('Sub image for the product is required', 400);
 
 
     const foundProduct = await products.findOne({seller:req.user?._id, _id:id});
     
     if(!foundProduct) throw new apiError('Product not found by this id', 404);
 
-    const response = await uploadOnCloudinary(mainImagefilepath);
+    let subImagesObject =[];
+
+    foundProduct.subImages.forEach((subImageObj)=>subImagesObject.push(subImageObj));
+
+    const response = await uploadOnCloudinary(subImagesFilePath);
 
     if(! response.url)throw new apiError(
                     'Something went wrong while updating the product main-image. Try again later.',500
                                         );
 
-    const mainImageObj = {
+    req.cloudinaryPublicIds= [response.public_id] //Attaching the Public id to req object so that on error 
+                                                //the images not needed on cloudinary shall get deleted as well.
+
+    const subImageObj = {
 
         url: response.url,
         publicId: response.public_id,
         localpath: mainImagefilepath
     }
 
-    fileDeleteFunction(foundProduct.mainImage.localpath)
-    foundProduct.mainImage= mainImageObj;
+    const updatedProduct = await products.findOneAndUpdate({$and:[
+                                                                   {seller:req.user?._id}, 
+                                                                   {_id:id},
+                                                                   {subImages: {$elemMatch: {_id:subImageId}}}
+                                                                 ]
+                                                            },
+                                                            {'subImages.$': subImageObj},
+                                                            {new:true, runValidators:true});
 
-    await foundProduct.save();
+
+
+    if(!updatedProduct) throw new apiError('something went wrong while updating the image', 500);
+
+    subImagesObject.forEach((subImageObj)=>{
+
+        fileDeleteFunction(subImageObj.localpath).then(async ()=>{
+            await cloudinary.uploader.destroy(subImageObj.publicId)
+        }).catch();
+
+    })
 
     res.status(200).json(new apiResponse(200, 'Image updated!'));
 
 
 });
+
 
 const addSubImagesToProductById = asyncHandler(async (req, res)=>{
 
@@ -379,22 +436,35 @@ const addSubImagesToProductById = asyncHandler(async (req, res)=>{
     const existingSubImagesLength = foundProduct.subImages.length;
 
     if((req.files?.length + existingSubImagesLength) > 4) throw new apiError(
-                                                        `Maximum 4 photos are allowed. You can upload 
-                                                        ${4-existingSubImagesLength} more`, 400);
+                                                        `Maximum 4 images are allowed. You can upload 
+                                                        ${4-existingSubImagesLength} more images`, 400);
 
 
     let subImagesPath=[]
+    let subImagesArrayObj= [];
 
     req.files.forEach((subImageObj)=>{
 
-
-
+        subImagesPath.push(subImageObj.path)
     })
+
+    subImagesPath.forEach(async (path)=>{
+       const response= await cloudinary.uploader.upload(path);
+       
+       subImagesArrayObj.push({
+        url: response?.url,
+        publicId: response?.public_id,
+        localpath: path
+       })
+    })
+
+    subImagesArrayObj.forEach((subImageObj)=> foundProduct.subImages.push(subImageObj))
     
+    await foundProduct.save({validateBeforeSave:false});
+
+    res.status(200).json(new apiResponse(200, 'Sub-Images added successfully'));
 
 });
-
-
 
 
 const deleteProductSubImageById= asyncHandler(async(req, res)=>{
@@ -407,7 +477,7 @@ const deleteProductSubImageById= asyncHandler(async(req, res)=>{
 
     const ProductWithDeletedSubImage =await products.findOneAndUpdate({ $and:[{seller:req.user?._id},
                                                                                {_id:id},
-                                                                               {subImages:{$elemMatch:{_id:subImageId}}} 
+                                                                               {'subImages._id':subImageId} 
                                                                             ]
                                                                     },
                                                                     {$pull:{subImages:{_id:subImageId}}},

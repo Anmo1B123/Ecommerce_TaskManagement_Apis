@@ -1,5 +1,7 @@
+import { v2  as cloudinary} from 'cloudinary'
 import fs from'fs'
 import util from 'util'
+
 
 export const fileDeleteFunction= async (path1, path2)=>{
 
@@ -22,6 +24,12 @@ else
 {
     console.log('no path was provided for deletion')
 }
+
+}
+
+export const cloudinaryFileDestroyer = (public_Ids_Array)=>{
+
+    public_Ids_Array.forEach(async (publicId)=>await cloudinary.uploader.destroy(publicId))
 
 }
 
@@ -72,6 +80,10 @@ export const fileDeleteFunctionOnError = (req)=>{
         }
 
     }    
+    if(req.cloudinaryPublicIds.length){
+
+        req.cloudinaryPublicIds.forEach(async (publicIds)=> await cloudinary.uploader.destroy(publicIds))
+    }
 
 //     if(req.files && typeof req.files==='object')
 // {

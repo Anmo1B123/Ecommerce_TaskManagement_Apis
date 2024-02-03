@@ -71,7 +71,7 @@ const handleSocialLogin = asyncHandler(async (req, res)=>{
     
     //WE CAN ALSO REDIRECT THE USER TO THE FRONTEND URL IF CLIENT IS NOT USING COOKIES WITH THE ACCESS & REFRESH TOKEN IN THE URL AS QUERY PARAMS
     //THAT URL WHICH FRONTEND WANTS.
-    res.redirect(`http://localhost:4001/?accesstoken=${accessToken}&refreshToken=${refreshToken}`)
+    res.status(302).redirect(`http://localhost:4001/passportLoginSuccess?accessToken=${accessToken}&refreshToken=${refreshToken}`)
     //FOR NOW WE ARE SIMPLY SENDING A RESPONSE FROM THE BACKEND 
     // res.status(200).json(new apiResponse(200, 'access and refresh tokens have been sent', {accessToken, refreshToken}));
 
@@ -100,7 +100,9 @@ const logout=asyncHandler(async (req,res)=>{
     user.uniqueVersionRefresh=undefined;
     await user.save({validateBeforeSave:false})
 
-    req.logout()
+    req.user=undefined; //making the current user undefined.
+
+    // req.logout() we shall use this if we are using passport session true by default else not.
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     res.status(200).json(new apiResponse(200,'Successfully Logged-out'))

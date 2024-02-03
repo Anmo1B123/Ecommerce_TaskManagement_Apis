@@ -19,7 +19,7 @@ if([title,duedate].some((field)=>field===undefined || field.trim()==="")) throw 
     const modifiedDate = moment(duedateStr, 'DD/MM/YY').startOf('day')
     const isoDate = modifiedDate.toISOString()
 
-console.log(datedue)
+// console.log(datedue)
             const todo= await todos.create({
                                             title,
                                             content,

@@ -8,7 +8,7 @@ const couponSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    couponcode: {
+    couponCode: {
         type: String,
         required: true,
         unique: true,
@@ -23,6 +23,10 @@ const couponSchema = new mongoose.Schema({
     discount: {
         type: Number,
         required: true
+    },
+    minimumCartValue:{
+        type: Number,
+        default:0
     },
     startDate: {
         type: Date,
@@ -47,5 +51,5 @@ const couponSchema = new mongoose.Schema({
 
 couponSchema.plugin(mongooseAggregatePaginate);
 
-export const coupon = mongoose.model('coupon', couponSchema);
+export const coupons = mongoose.model('coupons', couponSchema);
 

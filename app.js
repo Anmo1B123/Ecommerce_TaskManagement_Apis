@@ -22,6 +22,11 @@ import contactRoutes from './src/routes/contacts/contactRoutes.js'
 import ecomProfileRoutes from './src/routes/Ecom/profile.route.js'
 import ecomAddressRoutes from './src/routes/Ecom/address.route.js'
 import ecomProductRoutes from './src/routes/Ecom/product.route.js'
+import ecomCouponRoutes from './src/routes/Ecom/coupon.route.js'
+import ecomCartRoutes from './src/routes/Ecom/cart.route.js'
+import ecomCategoryRoutes from './src/routes/Ecom/category.route.js'
+import ecomOrderRoutes from './src/routes/Ecom/order.route.js'
+
 import rateLimit from 'express-rate-limit';
 import apiError from './src/utils/apiError.js';
 import helmet from 'helmet';
@@ -84,11 +89,28 @@ app.use('/api/v1/contacts', contactRoutes);
 app.use('/api/v1/ecom', ecomProfileRoutes);
 app.use('/api/v1/ecom', ecomAddressRoutes);
 app.use('/api/v1/ecom', ecomProductRoutes);
+app.use('/api/v1/ecom', ecomCouponRoutes);
+app.use('/api/v1/ecom', ecomCartRoutes);
+app.use('/api/v1/ecom', ecomCategoryRoutes);
+app.use('/api/v1/ecom', ecomOrderRoutes);
 
 
 // 5. For login with google
 app.get('/', (req, res)=>{
     res.send('<a href=/auth/google> Login with Google </a>')
+});
+
+app.get('/passportLoginSuccess', (req, res)=>{
+
+    const {accessToken="", refreshToken=""} = req.query
+    if(!accessToken && !refreshToken) throw new apiError('this route is not accessible without passport auth', 400)
+
+    res.status(200).json(new apiResponse(200, 'passport login was successful', {accessToken, refreshToken}));
+});
+
+app.get('/passportLoginFailure', (req, res)=>{
+
+    res.status(500).send('passport login was unsuccessful')
 });
 
 

@@ -51,8 +51,8 @@ if (req.headers.authorization && token===req.headers.authorization)
                 const passwordchangedtimeMILLISECONDS=parseInt(user.passwordChangedAt.getTime()/1000);
                 const jwtTimestamp= decoded.iat //the decoded.iat is 10 digits so divided the above by /1000
         
-                console.log(passwordchangedtimeMILLISECONDS)
-                console.log(jwtTimestamp)
+                // console.log(passwordchangedtimeMILLISECONDS)
+                // console.log(jwtTimestamp)
                 let response= passwordchangedtimeMILLISECONDS > jwtTimestamp
 
                 //Somehow the method made in the userschema for this wasn't working so wrote the logic here.

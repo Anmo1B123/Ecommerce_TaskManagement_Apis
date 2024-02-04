@@ -10,7 +10,7 @@ Array.prototype.isEmpty=function(){
 export const createAddressValidation = ()=>{
 
  return [body('addressLine1').trim().notEmpty().withMessage('address line 1 is required.'), 
-    body('addressLine2').optional().trim(),
+    body('addressLine2').optional().trim().notEmpty().withMessage('address line 2 cannot be empty'),
     body('street').trim().notEmpty().withMessage('street is required.'),
     body('city').trim().notEmpty().withMessage('city is required.'),
     body('state').trim().notEmpty().withMessage('state is required.'),

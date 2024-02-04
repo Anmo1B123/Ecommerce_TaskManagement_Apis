@@ -27,6 +27,9 @@ const login= asyncHandler(async (req, res)=> {
        const {accessToken, uniqueV1}= accessTokenResult1;
        const {refreshToken, uniqueV2}= refreshTokenResult2;
 
+    
+       await userFound.createCurrentUserCart(); //once user logs in one cart will be created for him.
+
        await userFound.save({validateBeforeSave:false});
         // console.log(userFound)
     //    req.session.access=uniqueV1;
@@ -61,6 +64,9 @@ const handleSocialLogin = asyncHandler(async (req, res)=>{
     const {accessToken}= await user.generateToken();
     const {refreshToken}= await user.generateRefreshToken();
     // console.log(accessToken, '     refresh----------   ' +  refreshToken)
+
+    await user.createEcomProfile();
+    await user.createCurrentUserCart();
     await user.save({validateBeforeSave:false});
 
     //ACCESS-TOKEN COOKIE MAXAGE=1D, REFRESH-TOKEN COOKIE MAXAGE=30D;

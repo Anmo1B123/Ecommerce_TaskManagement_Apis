@@ -3,10 +3,8 @@ import mongoose, {Schema} from 'mongoose'
 const itemSchema= new Schema({
 
 product:{
-
-type:Schema.Types.ObjectId,
-ref:"products"
-
+    type:Schema.Types.ObjectId,
+    ref:"products"
 },
 
 quantity:{

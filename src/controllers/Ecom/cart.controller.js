@@ -1,5 +1,11 @@
+import { cart} from "../../models/Ecom/cart.js";
+import { products } from "../../models/Ecom/product.js";
+import apiError from "../../utils/apiError.js";
+import apiResponse from "../../utils/apiResponse.js";
+
+
 export const getCart = async (userId) => {
-    const cartAggregation = await Cart.aggregate([
+    const cartAggregation = await cart.aggregate([
       {
         $match: {
           owner: userId,
@@ -11,7 +17,7 @@ export const getCart = async (userId) => {
       {
         $lookup: {
           from: "products",
-          localField: "items.productId",
+          localField: "items.product",
           foreignField: "_id",
           as: "product",
         },
@@ -25,12 +31,21 @@ export const getCart = async (userId) => {
         },
       },
       {
+        $lookup: {
+          // lookup for the coupon
+          from: "coupons",
+          localField: "coupon",
+          foreignField: "_id",
+          as: "coupon",  //Previous coupon shall be overwritten by the result- now it's an array due to lookup.
+        },
+      },
+      {
         $group: {
           _id: "$_id",
           items: {
             $push: "$$ROOT",
           },
-          coupon: { $first: "$coupon" }, // get first value of coupon after grouping
+          coupon: { $first: "$coupon" },// get first value of coupon after grouping //will return null if no coupon.
           cartTotal: {
             $sum: {
               $multiply: ["$product.price", "$quantity"], // calculate the cart total based on product price * total quantity
@@ -38,33 +53,29 @@ export const getCart = async (userId) => {
           },
         },
       },
-      {
-        $lookup: {
-          // lookup for the coupon
-          from: "coupons",
-          localField: "coupon",
-          foreignField: "_id",
-          as: "coupon",
-        },
-      },
-      {
-        $addFields: {
-          // As lookup returns an array we access the first item in the lookup array
-          coupon: { $first: "$coupon" },
-        },
-      },
+      // {
+      //   $addFields: {
+      //     // As lookup returns an array we access the first item in the lookup array
+      //     coupon: { $first: "$coupon" },
+      //   },
+      // },
       {
         $addFields: {
           discountedTotal: {
             // Final total is the total we get once user applies any coupon
             // final total is total cart value - coupon's discount value
-            $ifNull: [
-              {
-                $subtract: ["$cartTotal", "$coupon.discountValue"],
+            $cond:{
+              if:{
+                $exists:['$coupon'],
+                //$ne:[{$size:'$coupon'}, 0], //Using short-circuit behaviour of if condition which used $and implicitly.
+                $gte:['$cartTotal', '$coupon.discount']
               },
-              "$cartTotal", // if there is no coupon applied we will set cart total as out final total
-              ,
-            ],
+              then:{
+                $subtract: ["$cartTotal", "$coupon.discount"],
+              },
+              else: "$cartTotal"
+            },
+            
           },
         },
       },
@@ -81,33 +92,34 @@ export const getCart = async (userId) => {
   };
   
   const getUserCart = asyncHandler(async (req, res) => {
-    let cart = await getCart(req.user._id);
+    let cart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
   
     return res
       .status(200)
-      .json(new ApiResponse(200, cart, "Cart fetched successfully"));
+      .json(new apiResponse(200, 'cart fetched successfully', cart))
   });
   
   const addItemOrUpdateItemQuantity = asyncHandler(async (req, res) => {
     const { productId } = req.params;
     const { quantity = 1 } = req.body;
   
+    
     // fetch user cart
-    const cart = await Cart.findOne({
+    const foundCart = await cart.findOne({
       owner: req.user._id,
     });
   
     // See if product that user is adding exist in the db
-    const product = await Product.findById(productId);
+    const product = await products.findById(productId);
   
     if (!product) {
-      throw new ApiError(404, "Product does not exist");
+      throw new apiError(404, "Product does not exist");
     }
   
     // If product is there check if the quantity that user is adding is less than or equal to the product's stock
     if (quantity > product.stock) {
       // if quantity is greater throw an error
-      throw new ApiError(
+      throw new apiError(
         400,
         product.stock > 0
           ? "Only " +
@@ -120,7 +132,7 @@ export const getCart = async (userId) => {
   
     // See if the product that user is adding already exists in the cart
     const addedProduct = cart.items?.find(
-      (item) => item.productId.toString() === productId
+      (item) => item.product.toString() === productId
     );
   
     if (addedProduct) {
@@ -128,7 +140,7 @@ export const getCart = async (userId) => {
       // ! We are not adding or subtracting quantity to keep it dynamic. Frontend will send us updated quantity here
       addedProduct.quantity = quantity;
       // if user updates the cart remove the coupon associated with the cart to avoid misuse
-      // Do this only if quantity changes because if user adds a new project the cart total will increase anyways
+      // Do this only if quantity changes because if user adds a new product the cart total will increase anyways
       if (cart.coupon) {
         cart.coupon = null;
       }
@@ -147,22 +159,23 @@ export const getCart = async (userId) => {
   
     return res
       .status(200)
-      .json(new ApiResponse(200, newCart, "Item added successfully"));
+      .json(new apiResponse(200, "Item added successfully",newCart));
   });
   
-  const removeItemFromCart = asyncHandler(async (req, res) => {
+const removeItemFromCart = asyncHandler(async (req, res) => {
     const { productId } = req.params;
   
-    const product = await Product.findById(productId);
+    const product = await products.findById(productId);
   
     // check for product existence
     if (!product) {
-      throw new ApiError(404, "Product does not exist");
+      throw new apiError("Product does not exist", 404);
     }
-  
-    const updatedCart = await Cart.findOneAndUpdate(
+
+
+    const updatedCart = await cart.findOneAndUpdate(
       {
-        owner: req.user._id,
+        owner: req.user?._id,
       },
       {
         // Pull the product inside the cart items
@@ -170,33 +183,33 @@ export const getCart = async (userId) => {
         // ! this controller is responsible to remove the cart item entirely
         $pull: {
           items: {
-            productId: productId,
+            product: productId,
           },
         },
       },
       { new: true }
     );
   
-    let cart = await getCart(req.user._id);
+    let foundCart = await getCart(req.user._id);
   
     // check if the cart's new total is greater than the minimum cart total requirement of the coupon
-    if (cart.coupon && cart.cartTotal < cart.coupon.minimumCartValue) {
+    if (foundCart.coupon && foundCart.cartTotal < foundCart.coupon.minimumCartValue) {
       // if it is less than minimum cart value remove the coupon code which is applied
       updatedCart.coupon = null;
       await updatedCart.save({ validateBeforeSave: false });
       // fetch the latest updated cart
-      cart = await getCart(req.user._id);
+      foundCart = await getCart(req.user._id);
     }
   
     return res
       .status(200)
-      .json(new ApiResponse(200, cart, "Cart item removed successfully"));
+      .json(new apiResponse(200, "Cart item removed successfully", foundCart));
   });
   
-  const clearCart = asyncHandler(async (req, res) => {
-    await Cart.findOneAndUpdate(
+const clearCart = asyncHandler(async (req, res) => {
+    await cart.findOneAndUpdate(
       {
-        owner: req.user._id,
+        owner: req.user?._id,
       },
       {
         $set: {
@@ -206,11 +219,11 @@ export const getCart = async (userId) => {
       },
       { new: true }
     );
-    const cart = await getCart(req.user._id);
+    const foundCart = await getCart(req.user._id);
   
     return res
       .status(200)
-      .json(new ApiResponse(200, cart, "Cart has been cleared"));
+      .json(new apiResponse(200, "Cart has been cleared", foundCart));
   });
   
   export {

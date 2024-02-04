@@ -7,6 +7,7 @@ import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import { uniqueIdUserSpecificGenerator } from "../../utils/helpers/uniqueIdGenerator.js";
 import { fileDeleteFunction } from '../../utils/helpers/fsFileDelete.js';
 import mongoose from 'mongoose';
+import { ecomProfile } from '../../models/Ecom/profile.js';
 import { apiFeatures } from '../../utils/apiFeatures.js';
 
 const getAllUsers= asyncHandler(async (req, res, next)=>{
@@ -128,7 +129,10 @@ if([username, firstname, lastname,
                     
     if(!user) throw new apiError('Something went wrong while registering the user. Try again later',500)
             
-    await user.createEcomProfile
+// await user.createEcomProfile(); This method won't work here as create returns a js object not document instance.
+    
+    await ecomProfile.create({firstname:user.firstname, lastname:user.lastname, owner:user._id})
+
     res.status(200).json(new apiResponse(200, 'success', user));
 
 });

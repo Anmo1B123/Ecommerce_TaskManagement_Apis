@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { response } from "express";
 import { client } from "../database/redis.js";
 import { ecomProfile } from "./Ecom/profile.js";
+import { cart } from "./Ecom/cart.js";
 
 
 const userSchema= new Schema ({
@@ -120,6 +121,13 @@ userSchema.methods.createEcomProfile=  async function(){
     await ecomProfile.create({firstname, lastname, owner:userId})
 
 }
+
+userSchema.methods.createCurrentUserCart= async function(){
+
+    await cart.create({owner:this._id});
+
+}
+
 
 // ADDING A POST HOOK TO AUTOMATICALLY CREATE THE USER'S ECOM-PROFILE WHEN USER REGISTERS
 // userSchema.post('save', async function(userDoc, next){

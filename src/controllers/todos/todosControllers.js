@@ -220,7 +220,7 @@ const updatesubTodo = asyncHandler(async (req,res)=>{
     if(!todo) throw new apiError('Could not find any todo with the provided id', 400);
 
     todo=todo[0];
-    let todowithSubtodoid = await todos.find({createdBy:req.user._id, $and:[{_id:id}, {'subTodos._id':subTodoId}]})
+    let todowithSubtodoid = await todos.find({createdBy:req.user?._id, $and:[{_id:id}, {'subTodos._id':subTodoId}]})
     todowithSubtodoid=todowithSubtodoid[0] 
     if(!todowithSubtodoid) throw new apiError('Could not find any subtodo in the todo with the provided id', 400)
 

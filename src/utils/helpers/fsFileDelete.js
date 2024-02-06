@@ -27,10 +27,21 @@ else
 
 }
 
-export const cloudinaryFileDestroyer = (public_Ids_Array)=>{
+export const cloudinaryFileDestroyer = async (public_Ids)=>{
 
-    public_Ids_Array.forEach(async (publicId)=>await cloudinary.uploader.destroy(publicId))
-
+    try {
+        if(typeof public_Ids ==='string'){
+    
+            await cloudinary.uploader.destroy(public_Ids)
+    
+        }else if(typeof public_Ids ==='object' && Array.isArray(public_Ids)){
+    
+            public_Ids.forEach(async (publicId)=>await cloudinary.uploader.destroy(publicId))
+        }
+    } catch (error) {
+        console.log(error);
+        
+    }
 }
 
 
@@ -72,41 +83,19 @@ export const fileDeleteFunctionOnError = (req)=>{
 
         }
 
-        if(multerPath) fileDeleteFunction(multerPath);
+        if(multerPath) fileDeleteFunction(multerPath).then();
         if(multerPathArray.length !== 0){
 
-            multerPathArray.forEach((path)=> fileDeleteFunction(path))
+            multerPathArray.forEach(async (path)=> await fileDeleteFunction(path))
             
         }
 
     }    
-    if(req.cloudinaryPublicIds.length){
+    if(req.cloudinaryPublicIds?.length){
 
         req.cloudinaryPublicIds.forEach(async (publicIds)=> await cloudinary.uploader.destroy(publicIds))
     }
 
-//     if(req.files && typeof req.files==='object')
-// {
-    
-//     const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
-//     const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
-//     if((avatarfilepath && coverimagefilepath) || avatarfilepath){fileDeleteFunction(avatarfilepath, coverimagefilepath);}
-// }
-
-// if(req.file){
-
-//     if(req.file?.fieldname==='avatar'){
-    
-//         const avatarfilepath= req.file?.path
-//         fileDeleteFunction(avatarfilepath)
-//     }else if (req.file?.fieldname==='coverimage'){
-//         const coverimagefilepath= req.file?.path
-//         fileDeleteFunction(coverimagefilepath)
-//     }
-// }
-
-
-// }
 
 }
 

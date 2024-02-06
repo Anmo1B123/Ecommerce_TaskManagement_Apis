@@ -3,7 +3,7 @@ import { asyncHandler } from '../../Handlers/asyncHandler.js';
 import apiError from '../../../utils/apiError.js';
 
 
-const createCouponValidation = ()=>{
+const createCouponValidation =()=>{
 
     return [ body('name').trim().notEmpty().withMessage('coupon name is required.'), 
     body('couponCode').trim().notEmpty().withMessage('coupon code is required'),
@@ -21,6 +21,12 @@ const createCouponValidation = ()=>{
 
 // .withMessage() gets invoked only when the previous check returns a falsy value.
 
+const updateCouponValidation =()=>{
+
+    return createCouponValidation()
+
+
+};
 
 const validationResultHandler = asyncHandler((req, res, next)=>{
 
@@ -43,5 +49,6 @@ const validationResultHandler = asyncHandler((req, res, next)=>{
 
 export {
     createCouponValidation,
+    updateCouponValidation,
     validationResultHandler
 }

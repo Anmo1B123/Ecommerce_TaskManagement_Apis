@@ -4,9 +4,114 @@ import apiResponse from "../../utils/apiResponse.js";
 import apiError from "../../utils/apiError.js";
 import { coupons } from "../../models/Ecom/coupon.js";
 import moment from "moment";
+import { getCart } from "./cart.controller.js";
+import { cart } from "../../models/Ecom/cart.js";
+import { couponApiFeatures } from "../../utils/apiFeatures.js";
 
 
-const createCoupon = asyncHandler(async(req, res)=>{
+//BUYER CENTRIC CONTROLLERS------>
+const applyCoupon = asyncHandler(async(req, res)=>{
+
+    const { couponCode } = req.body;
+
+    if(!couponCode.trim()) throw new apiError('coupon code is required', 400);
+
+    let aggregatedCoupon = await coupons.aggregate([
+                                                      { 
+                                                        $match:{
+                                                            couponCode:couponCode?.trim().toUpperCase(),
+                                                            startDate: {$lt: new Date()},
+                                                            expiryDate:{$gt: new Date()},
+                                                            isActive:true
+                                                        }
+                                                      },
+                                                    ]);
+
+    const coupon=aggregatedCoupon[0];
+
+    if(!coupon) throw new apiError('Invalid coupon code',400);
+
+    const userCart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
+
+    if(userCart?.cartTotal < coupon.minimumCartValue){
+
+        throw new apiError('Add items worth INR '+ (coupon.minimumCartValue - userCart.cartTotal)
+                            + '/- or more to apply this coupon')
+    }
+
+
+    await cart.findOneAndUpdate({
+                                    owner:req.user?._id
+                                },
+                                {
+                                    $set:{coupon:coupon._id}
+                                })
+
+    const newCart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
+
+    return res.status(200).json(new apiResponse(200, 'Coupon applied successfully', newCart))
+
+});
+
+
+const removeCouponFromCart = asyncHandler(async(req, res)=>{
+
+    await cart.findOneAndUpdate({
+        owner:req.user?._id
+    },
+    {
+        $set:{coupon:null}
+    })
+
+    const newCart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
+
+    return res.status(200).json(new apiResponse(200, 'coupon removed successfully', newCart))
+});
+
+
+const getValidCouponsForCustomer = asyncHandler(async(req, res)=>{
+
+    let {page=1, limit=10, sort= '-createdAt'} = req.query;
+
+    page= parseInt(page);
+    limit= parseInt(limit);
+
+    const validCouponsAggregation = coupons.aggregate([
+                                                    {
+                                                        $match:{
+                                                            couponCode:couponCode?.trim().toUpperCase(),
+                                                            startDate: {$lt: new Date()},
+                                                            expiryDate:{$gt: new Date()},
+                                                            isActive:true
+                                                        }
+                                                    }])
+
+   const result = await coupons.aggregatePaginate(
+                            validCouponsAggregation,
+                            {
+                                page,
+                                limit,
+                                sort
+                            })
+    
+    if(!result) throw new apiError('No valid coupons found', 404);
+
+    const Coupons = result?.docs;
+    const total_Coupons= result?.totalDocs;
+    const Coupons_on_this_page= result?.limit;
+    const Page = result?.page;
+    const total_Pages= result?.totalPages
+                
+                
+    return res.status(200).json(new apiResponse(200, 'all valid coupons fetched!', {total_Coupons, total_Pages, 
+                                                            Page, Coupons_on_this_page,
+                                                            Coupons }))
+
+});
+
+
+//SELLER CENTRIC CONTROLLERS------>
+const createCoupon_s = asyncHandler(async(req, res)=>{
 
 
     const { name, couponCode, type = 'flat', discount, minimumCartValue=0, startDate=undefined, expiryDate=undefined} = req.body;
@@ -46,71 +151,116 @@ const createCoupon = asyncHandler(async(req, res)=>{
 });
 
 
-const applyCoupon = asyncHandler(async(req, res)=>{
+const updateCouponActiveStatusToggle_s = asyncHandler(async(req, res)=>{
 
+    const {couponId} = req.params;
 
+    if(!mongoose.Types.ObjectId.isValid(couponId)) throw new apiError('Not a valid id', 400);
 
+    const foundCoupon = await coupons.findOne({owner:req.user?._id, _id:couponId})
 
-});
+    if(!foundCoupon) throw new apiError('coupon not found', 404);
 
+    const currentActiveState= foundCoupon.isActive;
 
-const removeCouponFromCart = asyncHandler(async(req, res)=>{
+    foundCoupon.isActive=!currentActiveState;
+    foundCoupon.save({validateBeforeSave:false})
 
+    const newFoundCoupon = await coupons.findOne({owner:req.user?._id, _id:couponId})
 
-
-});
-
-
-const updateCouponActiveStatus = asyncHandler(async(req, res)=>{
-
-
-
-});
-
-
-const getAllCoupons = asyncHandler(async(req, res)=>{
-
+    return res.status(200).json(new apiResponse(200, 'coupon status updated', newFoundCoupon))
 
 
 });
 
 
-const getValidCouponsForCustomer = asyncHandler(async(req, res)=>{
+const getAllCoupons_s = asyncHandler(async(req, res)=>{
 
+    if(Object.keys(req.query).length===0){
 
+     
+        const foundCoupons = await coupons.find();
+        if(!foundCoupons) throw new apiError('no coupon found to be shown', 404);
+ 
+        res.status(200).json(new apiResponse(200, 'Success', foundCoupons));
+ 
+     }else{
+
+        const query= new couponApiFeatures(coupons.find(), req.query, coupons).search().pagination().sort().fields()
+
+        
+        const limit = query.limit;
+        const page= query.page;
+        const Total_Coupons = await query.docsCount
+        const Coupons_on_this_page = await query.docsOnthisPage
+        const data= await query.queryObj;
+
+        couponApiFeatures.pageErrorfunc(Total_Coupons, req);
+
+        res.status(200).json(new apiResponse(200, 'Success', {Total_Coupons, page, limit, Coupons_on_this_page, data}))
+
+    }
 
 });
 
 
-const getCouponById = asyncHandler(async(req, res)=>{
+const getCouponById_s = asyncHandler(async(req, res)=>{
 
+    const {couponId} = req.params;
 
+    if(!mongoose.Types.ObjectId.isValid(couponId)) throw new apiError('Not a valid id', 400);
+
+    const coupon = await coupons.findOne({owner: req.user?._id, _id:couponId});
+
+    if(!coupon) throw new apiError('coupon not found', 404);
+
+    return res.status(200).json(new apiResponse(200, 'success', coupon))
 
 });
 
 
-const updateCoupon = asyncHandler(async(req, res)=>{
+const updateCoupon_s = asyncHandler(async(req, res)=>{
 
+    const {couponId} = req.params;
 
+    if(!mongoose.Types.ObjectId.isValid(couponId)) throw new apiError('Not a valid id', 400);
+
+    const {name, couponCode, type, discount, minimumCartValue, startDate, expiryDate} = req.body;
+
+    const updatedCoupon = await coupons.findOneAndUpdate({owner:req.user?._id, _id:couponId},
+                                                         req.body,
+                                                         {new:true, runValidators:true})
+
+    if(!updatedCoupon) throw new apiError('coupon not found', 404);
+    
+    return res.status(200).json(new apiResponse(200, 'coupon was successfully updated', {updatedCoupon}))
 
 });
 
 
-const deleteCoupon = asyncHandler(async(req, res)=>{
+const deleteCoupon_s = asyncHandler(async(req, res)=>{
 
+    const {couponId} = req.params;
 
+    if(!mongoose.Types.ObjectId.isValid(couponId)) throw new apiError('Not a valid id', 400);
+
+    const deletedCoupon = await coupons.deleteOne({owner:req.user?._id, _id:couponId});
+
+    if(!deletedCoupon) throw new apiError('coupon does not exist', 404);
+    
+    return res.status(200).json(new apiResponse(200, "coupon deleted successfully", {deletedCoupon}))
 
 });
 
 
 export {
-    createCoupon,
+    createCoupon_s,
     applyCoupon,
     removeCouponFromCart,
-    updateCouponActiveStatus,
-    getAllCoupons,
+    updateCouponActiveStatusToggle_s,
+    getAllCoupons_s,
     getValidCouponsForCustomer,
-    getCouponById,
-    updateCoupon,
-    deleteCoupon
+    getCouponById_s,
+    updateCoupon_s,
+    deleteCoupon_s
 }

@@ -1,7 +1,9 @@
 import { cart} from "../../models/Ecom/cart.js";
 import { products } from "../../models/Ecom/product.js";
+import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import apiError from "../../utils/apiError.js";
 import apiResponse from "../../utils/apiResponse.js";
+import mongoose from "mongoose";
 
 
 export const getCart = async (userId) => {
@@ -91,19 +93,22 @@ export const getCart = async (userId) => {
     );
   };
   
-  const getUserCart = asyncHandler(async (req, res) => {
-    let cart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
+const getUserCart = asyncHandler(async (req, res) => {
+    const cart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
   
     return res
       .status(200)
       .json(new apiResponse(200, 'cart fetched successfully', cart))
-  });
+});
   
-  const addItemOrUpdateItemQuantity = asyncHandler(async (req, res) => {
+const addItemOrUpdateItemQuantity = asyncHandler(async (req, res) => {
     const { productId } = req.params;
     const { quantity = 1 } = req.body;
   
+    if(!productId) throw new apiError('To make this http request please provide the productId', 422)
     
+    if(! mongoose.Types.ObjectId.isValid(productId)) throw new apiError('Not a valid Id', 400);
+
     // fetch user cart
     const foundCart = await cart.findOne({
       owner: req.user._id,
@@ -131,7 +136,7 @@ export const getCart = async (userId) => {
     }
   
     // See if the product that user is adding already exists in the cart
-    const addedProduct = cart.items?.find(
+    const addedProduct = foundCart.items?.find(
       (item) => item.product.toString() === productId
     );
   
@@ -141,12 +146,12 @@ export const getCart = async (userId) => {
       addedProduct.quantity = quantity;
       // if user updates the cart remove the coupon associated with the cart to avoid misuse
       // Do this only if quantity changes because if user adds a new product the cart total will increase anyways
-      if (cart.coupon) {
-        cart.coupon = null;
+      if (foundCart.coupon) {
+        foundCart.coupon = null;
       }
     } else {
       // if its a new product being added in the cart push it to the cart items
-      cart.items.push({
+      foundCart.items.push({
         productId,
         quantity,
       });
@@ -163,8 +168,12 @@ export const getCart = async (userId) => {
   });
   
 const removeItemFromCart = asyncHandler(async (req, res) => {
-    const { productId } = req.params;
+    const { productId = ""} = req.params;
   
+    if(!productId) throw new apiError('To make this http request please provide the productId', 422)
+    
+    if(! mongoose.Types.ObjectId.isValid(productId)) throw new apiError('Not a valid Id', 400);
+    
     const product = await products.findById(productId);
   
     // check for product existence
@@ -226,9 +235,10 @@ const clearCart = asyncHandler(async (req, res) => {
       .json(new apiResponse(200, "Cart has been cleared", foundCart));
   });
   
-  export {
-    getUserCart,
-    addItemOrUpdateItemQuantity,
-    removeItemFromCart,
-    clearCart,
-  };
+  
+export {
+  getUserCart,
+  addItemOrUpdateItemQuantity,
+  removeItemFromCart,
+  clearCart,
+};

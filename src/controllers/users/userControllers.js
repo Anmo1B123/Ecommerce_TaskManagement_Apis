@@ -25,7 +25,7 @@ else
 {           
 
 
-        let query= new apiFeatures(users.find(), req.query).search().sort().fields().pagination();
+        let query= new apiFeatures(users.find(), req.query, users).search().sort().fields().pagination();
         
         console.log('docsCount here' + query.docsCount);
 

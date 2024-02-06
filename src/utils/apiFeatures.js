@@ -3,10 +3,11 @@ import { users } from "../models/users.js";
 import apiError from "./apiError.js";
 
 export class apiFeatures{
-constructor(queryObj, queryString){
+constructor(queryObj, queryString, modelVal){
 
 this.queryObj=queryObj;
-this.queryString=queryString
+this.queryString=queryString;
+this.modelVal = modelVal;
 
 }
 
@@ -39,7 +40,7 @@ search(){
 
     let querystr =JSON.stringify(querystrobj)
 
-    // NO NEED FOR NOW -> querystr= querystr.replace(/\b(gt|gte|lt|lte|in)\b/ig, (match)=>'$'+match);
+    querystr= querystr.replace(/\b(gt|gte|lt|lte|in)\b/ig, (match)=>'$'+match);
 
     querystr=JSON.parse(querystr)
 
@@ -49,7 +50,7 @@ search(){
         const key= key_Values[0]
         const value= key_Values[1]
 
-        regexQuery[key]= {$regex: new RegExp(`^${value}`, 'i')}
+        regexQuery[key]= {$regex: new RegExp(`^${value}$`, 'i')}
 
     })
 
@@ -58,7 +59,7 @@ search(){
    
 
 /* should use a dynamic variable for count in place of users model in the below code */
- this.docsCount=users.find(regexQuery).count();
+ this.docsCount=this.modelVal.find(regexQuery).count();
 
     return this;
 }
@@ -113,9 +114,9 @@ return this;
 
 export class productApiFeatures extends apiFeatures{
 
-constructor(queryObj, queryString){
-super(queryObj, queryString);
-} // due to Es6 we can skip using constructor and and super, the child class will automatically do the job. 
+constructor(queryObj, queryString, modelVal){
+super(queryObj, queryString, modelVal);
+} 
 
 static pageErrorfunc(documentCount, req){
 
@@ -164,6 +165,45 @@ pagination(){
 
     super.pagination()
 };
+
+
+}
+
+
+export class couponApiFeatures extends productApiFeatures{
+
+constructor(queryObj, queryString, modelVal){
+        
+        super(queryObj, queryString, modelVal);
+} 
+        
+    
+static pageErrorfunc(documentCount, req){
+        
+            super.pageErrorfunc(documentCount, req)
+}
+
+search(){
+
+    super.search()
+     
+};
+
+sort(){
+ 
+    super.sort()
+};
+
+fields(){
+ 
+    super.fields()
+};
+
+pagination(){
+ 
+    super.pagination()
+};
+
 
 
 }

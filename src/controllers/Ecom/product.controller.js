@@ -6,7 +6,7 @@ import apiResponse from "../../utils/apiResponse.js";
 import apiError from "../../utils/apiError.js";
 import { category } from "../../models/Ecom/category.js";
 import { uploadOnCloudinary } from "../../middlewares/Handlers/cloudinary.js";
-import { fileDeleteFunction } from "../../utils/helpers/fsFileDelete.js";
+import { cloudinaryFileDestroyer, fileDeleteFunction } from "../../utils/helpers/fsFileDelete.js";
 import { v2 as cloudinary} from "cloudinary";
 
 
@@ -18,15 +18,15 @@ const getAllProducts_B = asyncHandler(async(req, res)=>{
     if(Object.keys(req.query).length===0){
 
      
-       const products = await products.find();
-       if(!products) throw new apiError('no product found to be shown', 404);
+       const foundProducts = await products.find();
+       if(!foundProducts) throw new apiError('no product found to be shown', 404);
 
        res.status(200).json(new apiResponse(200, 'Success', products));
 
     }else{
 
 
-    const query= new productApiFeatures(products.find(), req.query).search().filters().pagination().sort().fields()
+    const query= new productApiFeatures(products.find(), req.query, products).search().filters().pagination().sort().fields()
 
         
         const limit = query.limit;
@@ -40,8 +40,6 @@ const getAllProducts_B = asyncHandler(async(req, res)=>{
         res.status(200).json(new apiResponse(200, 'Success', {Total_Products, page, limit, Products_on_this_page, data}))
 
     }
-
-
 
 });
 
@@ -179,7 +177,7 @@ const createProduct_S = asyncHandler(async(req, res, next)=>{
     let subImagesfilepathArr =[];
     let subImagesArrayOfSubImagesObj = [];
 
-    if(req.files?.subImages) {
+    if(req.files?.subImages && req.files?.subImages !== undefined && Array.isArray(req.files?.subImages)) {
 
        let subImagesArray= req.files.subImages
         
@@ -369,23 +367,23 @@ const updateProductSubImageById = asyncHandler(async(req, res)=>{
 
     if(! mongoose.Types.ObjectId.isValid(id)) throw new apiError('Not a valid Id', 400);
 
-    const subImagesFilePath =  req.file?.path;
+    const subImageFilePath =  req.file?.path;
 
-    if (!subImagesFilePath) throw new apiError('Sub image for the product is required', 400);
-
+    if (!subImageFilePath) throw new apiError('Sub image for the product is required', 400);
 
     const foundProduct = await products.findOne({seller:req.user?._id, _id:id});
     
     if(!foundProduct) throw new apiError('Product not found by this id', 404);
 
-    let subImagesObject =[];
+    const subImageObjWithId = foundProduct.subImages.find(subImage=> subImage._id.toString()===subImageId);
 
-    foundProduct.subImages.forEach((subImageObj)=>subImagesObject.push(subImageObj));
+    if(!subImageObjWithId || 'localpath' in subImageObjWithId) throw new apiError('subImage by this id not found', 400);
 
-    const response = await uploadOnCloudinary(subImagesFilePath);
+
+    const response = await uploadOnCloudinary(subImageFilePath);
 
     if(! response.url)throw new apiError(
-                    'Something went wrong while updating the product main-image. Try again later.',500
+                                        'Something went wrong while updating the product main-image. Try again later.',500
                                         );
 
     req.cloudinaryPublicIds= [response.public_id] //Attaching the Public id to req object so that on error 
@@ -395,7 +393,7 @@ const updateProductSubImageById = asyncHandler(async(req, res)=>{
 
         url: response.url,
         publicId: response.public_id,
-        localpath: mainImagefilepath
+        localpath: subImageFilePath
     }
 
     const updatedProduct = await products.findOneAndUpdate({$and:[
@@ -411,13 +409,11 @@ const updateProductSubImageById = asyncHandler(async(req, res)=>{
 
     if(!updatedProduct) throw new apiError('something went wrong while updating the image', 500);
 
-    subImagesObject.forEach((subImageObj)=>{
+    
+    fileDeleteFunction(subImageObjWithId.localpath)
+                    .then(async()=> await cloudinaryFileDestroyer(subImageObjWithId.publicId))
+                    .catch((error)=> console.log(error));
 
-        fileDeleteFunction(subImageObj.localpath).then(async ()=>{
-            await cloudinary.uploader.destroy(subImageObj.publicId)
-        }).catch();
-
-    })
 
     res.status(200).json(new apiResponse(200, 'Image updated!'));
 

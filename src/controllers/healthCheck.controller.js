@@ -1,4 +1,5 @@
 import apiResponse from "../utils/apiResponse.js";
+import { asyncHandler } from "../middlewares/Handlers/asyncHandler.js";
 
 const healthCheck = asyncHandler(async (req, res) => {
     console.log("Client ip: ", req.clientIp);

@@ -58,7 +58,10 @@ const login= asyncHandler(async (req, res)=> {
 
 const handleSocialLogin = asyncHandler(async (req, res)=>{
 
-    const user= await users.findById(req.user?._id);
+    const user= await users.findById(req.user?._id); /* It has to rely on both serialization and 
+                                                        deserialization for getting the current user in
+                                                        req.user. so have to use session based strategy
+                                                        i.e. session:true by default in google strategy. */
     if(!user) throw new apiError('user does not exist', 404);
 
     const {accessToken}= await user.generateToken();
@@ -91,7 +94,7 @@ const handleSocialLogin = asyncHandler(async (req, res)=>{
 
 const logout=asyncHandler(async (req,res)=>{
 
-    const user = await users.findById(req.user._id)
+    const user = await users.findById(req.user?._id)
     if(!user) throw new apiError('unauthorized request',401)
 
     // req.session.access=undefined;

@@ -7,7 +7,7 @@ import { createAddressValidation, updateAddressValidation, validationResultHandl
 
 const route = Router();
 
-// route.use(verifyJWT);
+route.use(verifyJWT);
 route.route('/address').get(getAllAddress)
                        .post(createAddressValidation(),validationResultHandler,createAddress);
                        

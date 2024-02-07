@@ -1,11 +1,12 @@
-import moment from "moment";
+import moment from "moment-timezone";
+import  satelize from "satelize";
+
 import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
 import { initializePreFindHookFunc, todos } from "../../models/todos.js";
 import apiError from '../../utils/apiError.js'
 import {apiFeatures} from '../../utils/apiFeatures.js'
 import apiResponse from '../../utils/apiResponse.js'
-
-
+import * as lodash from "lodash";
 
 
 
@@ -33,6 +34,8 @@ if([title,duedate].some((field)=>field===undefined || field.trim()==="")) throw 
 
 const getAllTodos = asyncHandler(async (req,res)=>{
 
+    console.log(req.clientIp)
+    satelize.satelize({ip:req.clientIp}, (err, load)=> console.log(load))
     initializePreFindHookFunc(req);
 
    if(Object.keys(req.query).length ===0)
@@ -44,15 +47,41 @@ const getAllTodos = asyncHandler(async (req,res)=>{
 
        
     //    const allTodos= await todos.findbyAuthenticatedUser(req.user).sort('-createdAt');
-       const allTodos= await todos.find().sort('-createdAt');
-       
-        res.status(200).json(new apiResponse(200, 'Success', {Length:allTodos.length,allTodos}));
+       let allTodo= await todos.find().sort('-createdAt');
+      
+    //    const allTodo= allTodos.map((todo)=>{
+    //     return{
+    //         ...todo,
+    //     newDuedate: moment(todo.duedate).tz('Asia/Kolkata').format()
+    //     }
+    //    })
+    // console.log(moment(allTodos[0].duedate).tz('Asia/Kolkata'))
+
+        allTodo.forEach((todo, index)=>{
+
+            const targetObject = Object.assign({}, todo._doc)
+            // console.log(targetObject.duedate)
+            targetObject.duedate= moment(targetObject.duedate).tz('Asia/Kolkata').format()
+            // console.log(targetObject.duedate)
+
+            allTodo[index]= targetObject
+
+        })
+
+    //    const allTodos= allTodo.map((todo)=>{
+
+
+    //     todo._doc.duedate=moment(todo._doc.duedate).tz('Asia/Kolkata')
+
+    //     })
+
+        res.status(200).json(new apiResponse(200, 'Success', {Length:allTodo.length,allTodo}));
 
    }
    else
    {
 
-    const query= new apiFeatures(todos.findbyAuthenticatedUser(req.user), req.query).search().pagination().sort().fields();
+    const query= new apiFeatures(todos.findbyAuthenticatedUser(req.user), req.query, todos).search().pagination().sort().fields();
 
     const   documentsCount  =     await query.docsCount;
     const   docsOnThisPage  =     await query.docsOnthisPage;
@@ -73,8 +102,8 @@ const getAllTodos = asyncHandler(async (req,res)=>{
 const updateTodoById = asyncHandler(async (req,res,next)=>{
 
     const {id} = req.params;
-
-   let todo= await todos.find({createdBy: req.user._id}).where('_id').equals(id);
+initializePreFindHookFunc(req);
+   let todo= await todos.find({_id:id})
     // this todo is always an array act accordingly
 //    console.log(todo)
    if(todo.length===0) throw new apiError('Could not find any todo by this id', 400); 
@@ -93,10 +122,12 @@ console.log('false')
     throw new apiError('Title cannot be empty for todo', 400);}
    if(!(title==="" || title?.trim()==="") && (duedate==="" || duedate?.trim()==="")) {
     throw new apiError('Duedate cannot be empty for todo', 400);}
-   if((title===""||title.trim()==="") && (duedate===""||duedate.trim()==="")){
+   if((title===""||title?.trim()==="") && (duedate===""||duedate.trim()==="")){
     throw new apiError('title and duedate cannot be empty for todo', 400);}
 
-   const datedue = new Date(duedate)
+    console.log(duedate)
+   let datedue = moment(duedate, 'YYYY/MM/DD')
+   
    console.log(datedue)
    /* For-each does not work for undefined elements of an array */
     const propArr= [['title', title], ['content', content], 
@@ -127,7 +158,8 @@ const toggleIsCompleted = asyncHandler(async (req,res)=>{
 
     const {id}= req.params;
 
-    let todo = await todos.findbyAuthenticatedUser(req.user).find({_id:id}); 
+    initializePreFindHookFunc(req)
+    let todo = await todos.find({_id:id}); 
     todo=todo[0]
     // console.log(todo)
     if(!todo) throw new apiError('Todo not found', 400);

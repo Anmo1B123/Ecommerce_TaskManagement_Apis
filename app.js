@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import cors from 'cors'
 import sanitize from 'express-mongo-sanitize';
 import xss from 'xss-clean'
+import requestIp from 'request-ip'
+import { handleSocialLogin } from './src/controllers/users/logController.js';
 
 import { errorHandler } from './src/middlewares/Handlers/errorHandler.js';
 import cookieParser from 'cookie-parser';
@@ -52,6 +54,7 @@ app.use(rateLimit({
         requests per ${options.windowMs/60000} minutes`, options.statusCode || 500);
     }
 }));
+app.use(requestIp.mw())
 app.use(morgan('dev'));
 
 app.use(express.json({limit: '1mb'}));
@@ -100,9 +103,11 @@ app.get('/api/v1/healthCheck', healthCheck);
 
 // 5. For login with google
 app.get('/', (req, res)=>{
-    res.send('<a href=/auth/google> Login with Google </a>')
+    res.send('<a href=/api/v1/users/auth/google> Login with Google </a>')
 });
 
+app.get('/auth/google/callback' ,passport.authenticate('google',{failureRedirect:'/passportLoginFailure'})
+                                                        , handleSocialLogin);
 
 app.get('/passportLoginSuccess', (req, res)=>{
 

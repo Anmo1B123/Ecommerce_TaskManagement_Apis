@@ -60,27 +60,27 @@ try {
 }));
   
   
-  // passport.serializeUser((user, next)=>{
+  passport.serializeUser((user, next)=>{
   
-  //   next(null,user._id);
+    next(null,user._id);
   
-  // });
+  });
   
-  // passport.deserializeUser(async (id, next)=>{
-  // // console.log(id);
-  //   try {
-  //     const user= await users.findById(id)
+  passport.deserializeUser(async (id, next)=>{
+  // console.log(id);
+    try {
+      const user= await users.findById(id)
 
-  //     if(!user){ next(new apiError('user does not exist', 404), null);
-  //   }else{
-  //     next(null,user);
-  //   }
-  //   } catch (error) {
+      if(!user){ next(new apiError('user does not exist', 404), null);
+    }else{
+      next(null,user);
+    }
+    } catch (error) {
       
-  //     next(new apiError(`Something went wrong while deserializing the user. Error: ${error}`,500), null)
-  //   }
+      next(new apiError(`Something went wrong while deserializing the user. Error: ${error}`,500), null)
+    }
   
-  // });
+  });
   
 } catch (error) {
   console.log(`PASSPORT ERROR=> ${error}`)

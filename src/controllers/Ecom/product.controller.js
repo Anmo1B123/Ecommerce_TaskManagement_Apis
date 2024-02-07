@@ -315,6 +315,23 @@ const updateProductDetailsById = asyncHandler(async(req, res)=>{
 
 });
 
+const deleteProductById = asyncHandler(async (req, res)=>{
+
+    const {id} = req.params;
+
+    if(! mongoose.Types.ObjectId.isValid(id)) throw new apiError('Not a valid id', 400);
+
+    const product = await products.findOne({seller:req.user?._id, _id:id})
+
+    if(!product) throw new apiError('Product not found by this id', 404);
+
+    const acknowledgement = await products.deleteOne({seller:req.user?._id, _id:id})
+
+    if(!acknowledgement) throw new apiError('Something went wrong while deleting the product', 500)
+
+    return res.status(200).json(new apiResponse(200, 'Product deleted Successfully', acknowledgement))
+});
+
 
 const updateProductMainImageById = asyncHandler(async(req, res)=>{
 
@@ -493,6 +510,7 @@ export {getAllProducts_B,
     createProduct_S,
     getProductById_S,
     updateProductDetailsById,
+    deleteProductById,
     updateProductMainImageById,
     updateProductSubImageById,
     addSubImagesToProductById,

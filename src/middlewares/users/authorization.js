@@ -7,13 +7,13 @@ import { client } from '../../database/redis.js';
 
  const verifyJWT = asyncHandler ( async (req,res,next)=>{
  
-    let token= req.headers.authorization || req.cookies?.accessToken;
+    let token= req.headers.authorization || req.cookies?.accessToken || "";
 
 if(!token) throw new apiError('unauthorized request', 401);
     // console.log(token)
 
 /*CONDITION FOR TOKEN IN COOKIE */
-if(req.cookies?.accessToken && token===req.cookies.accessToken)
+if((req.cookies?.accessToken ||false) && token===req.cookies.accessToken)
 {
     console.log('I am working')
     token=req.cookies.accessToken
@@ -26,7 +26,7 @@ if (req.headers.authorization && token===req.headers.authorization)
     if(token.startsWith('bearer') || token.startsWith('Bearer'))
     {
         token= token.split(' ')[1];
-        console.log('hi')
+        // console.log('hi')
     }
     else
     {
@@ -38,7 +38,7 @@ if (req.headers.authorization && token===req.headers.authorization)
         const jwtVerify= utils.promisify(jwt.verify);
         const decoded= await jwtVerify(token, process.env.JWT_SECRET);
         
-        const user= await users.findById(decoded._id).select('-password');
+        const user= await users.findById(decoded?._id).select('-password');
 
         if(!user.refreshtoken) throw new apiError('User had logged-out, Kindly login again', 401);
         

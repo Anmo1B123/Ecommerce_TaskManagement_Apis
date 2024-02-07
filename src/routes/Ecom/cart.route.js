@@ -11,7 +11,7 @@ const route = Router();
 
 route.use(verifyJWT);
 
-route.route('/cart/:productId?').get(getUserCart).patch(addItemOrUpdateItemQuantity).delete(removeItemFromCart)
 route.route('/cart/clearCart').patch(clearCart);
+route.route('/cart/:productId?').get(getUserCart).patch(addItemOrUpdateItemQuantity).delete(removeItemFromCart)
 
 export default route;

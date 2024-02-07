@@ -7,10 +7,11 @@ import mongoose from "mongoose";
 
 
 export const getCart = async (userId) => {
+
     const cartAggregation = await cart.aggregate([
       {
         $match: {
-          owner: userId,
+          owner: new mongoose.Types.ObjectId(userId),
         },
       },
       {
@@ -68,8 +69,7 @@ export const getCart = async (userId) => {
             // final total is total cart value - coupon's discount value
             $cond:{
               if:{ $and:[
-                {$exists:['$coupon']},
-                //$ne:[{$size:'$coupon'}, 0], //Using short-circuit behaviour of if condition which used $and implicitly.
+                {$ne:[{$type:'$coupon'}, undefined]},
                 {$gte:['$cartTotal', '$coupon.discount']}
               ]
               },
@@ -95,11 +95,10 @@ export const getCart = async (userId) => {
   };
   
 const getUserCart = asyncHandler(async (req, res) => {
-    const cart = await getCart(new mongoose.Types.ObjectId(req.user?._id));
+    const cart = await getCart(req.user?._id);
   
-    return res
-      .status(200)
-      .json(new apiResponse(200, 'cart fetched successfully', cart))
+    console.log(cart)
+    return res.status(200).json(new apiResponse(200, 'cart fetched successfully', cart))
 });
   
 const addItemOrUpdateItemQuantity = asyncHandler(async (req, res) => {

@@ -25,9 +25,8 @@ route.route('/coupon').get(getAllCoupons_s)
 route.route('/coupon/toggleActiveStatus/:couponId').patch(updateCouponActiveStatusToggle_s)
 
 route.route('/coupon/validCoupons').get(getValidCouponsForCustomer);                      
-route.route('/coupon/apply').get(applyCoupon);
-route.route('/coupon/remove').get(removeCouponFromCart)
-
+route.route('/coupon/apply').patch(applyCoupon);
+route.route('/coupon/remove').patch(removeCouponFromCart)
 
 
 route.route('/coupon/:couponId').get(getCouponById_s)

@@ -67,10 +67,11 @@ export const getCart = async (userId) => {
             // Final total is the total we get once user applies any coupon
             // final total is total cart value - coupon's discount value
             $cond:{
-              if:{
-                $exists:['$coupon'],
+              if:{ $and:[
+                {$exists:['$coupon']},
                 //$ne:[{$size:'$coupon'}, 0], //Using short-circuit behaviour of if condition which used $and implicitly.
-                $gte:['$cartTotal', '$coupon.discount']
+                {$gte:['$cartTotal', '$coupon.discount']}
+              ]
               },
               then:{
                 $subtract: ["$cartTotal", "$coupon.discount"],

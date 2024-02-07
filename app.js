@@ -30,6 +30,7 @@ import ecomOrderRoutes from './src/routes/Ecom/order.route.js'
 import rateLimit from 'express-rate-limit';
 import apiError from './src/utils/apiError.js';
 import helmet from 'helmet';
+import { healthCheck } from './src/controllers/healthCheck.controller.js';
 
 
 const app= express();
@@ -37,7 +38,7 @@ const app= express();
 ////////EXPRESS MIDDLEWARES//////////////////
 app.use(cors({
     origin: process.env.CORS_ORIGIN || "*" === "*"? "*":process.env.CORS_ORIGIN?.split(','),
-    methods:['GET', 'POST', 'PATCH', 'DELETE'],
+    methods:['GET', 'POST', 'PATCH', 'DELETE', 'PUT'],
     credentials:true
 }));
 
@@ -95,11 +96,13 @@ app.use('/api/v1/ecom', ecomCartRoutes);
 app.use('/api/v1/ecom', ecomCategoryRoutes);
 app.use('/api/v1/ecom', ecomOrderRoutes);
 
+app.get('/api/v1/healthCheck', healthCheck);
 
 // 5. For login with google
 app.get('/', (req, res)=>{
     res.send('<a href=/auth/google> Login with Google </a>')
 });
+
 
 app.get('/passportLoginSuccess', (req, res)=>{
 

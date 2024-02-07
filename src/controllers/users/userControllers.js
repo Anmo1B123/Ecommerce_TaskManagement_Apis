@@ -5,7 +5,7 @@ import apiError from '../../utils/apiError.js';
 import { uploadOnCloudinary } from "../../middlewares/Handlers/cloudinary.js";
 import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import { uniqueIdUserSpecificGenerator } from "../../utils/helpers/uniqueIdGenerator.js";
-import { fileDeleteFunction } from '../../utils/helpers/fsFileDelete.js';
+import { cloudinaryFileDestroyer, fileDeleteFunction } from '../../utils/helpers/fsFileDelete.js';
 import mongoose from 'mongoose';
 import { ecomProfile } from '../../models/Ecom/profile.js';
 import { apiFeatures } from '../../utils/apiFeatures.js';
@@ -167,16 +167,13 @@ const updateUser= asyncHandler(async (req, res, next)=>{
     before any route handler then you can't use "form-multipart" of postman or thunderclient 
     to get data using req.body - see the comment in routes/userRoutes.js for further clarification.*/  
    
-    const avatarfilepath=req.files?.avatar? req.files.avatar[0].path : '';
-    const coverimagefilepath=req.files?.coverimage? req.files.coverimage[0].path : '';
-
-    if(!mongoose.Types.ObjectId.isValid(id)) throw new apiError('not a valid id', 400)
+    if(!mongoose.Types.ObjectId.isValid(id)) throw new apiError('Not a valid id', 400)
     //Checking if valid ObjectId of mongodb is being provided//
 
     const user=await users.findOne({_id:id});
     // console.log(user)
     
-    if(!user) throw new apiError('could not find the user by this id', 400);
+    if(!user) throw new apiError('Could not find the user by this id', 400);
         
 /* APPLYING A CONDITION IN WHICH USER CAN'T UPDATE USERNAME AND EMAIL WHICH IS ALREADY TAKEN BY SOME1 */
 
@@ -200,52 +197,13 @@ const updateUser= asyncHandler(async (req, res, next)=>{
                 if(userbyUsername && !userByEmail)throw new apiError('Username in use already',400);
                 if(!userbyUsername && userByEmail)throw new apiError('Email in use already',400);
             }
-
-            const avatar= await uploadOnCloudinary(avatarfilepath);
-
-            const avatarPublicId= avatar?.public_id;
-            const avatarUrl =avatar?avatar.url:undefined;
-            
+    
+    const updatedUser= await users.findOneAndUpdate({_id:id}, req.body, {new:true, runValidators:true});
            
-            const coverimage= await uploadOnCloudinary(coverimagefilepath);
-
-            const coverimagePublicId= coverimage?.public_id;
-            const coverimageurl =coverimage?coverimage.url:undefined;
+    if(!updatedUser) throw new apiError(`Something went wrong while updating the user`, 500);
             
-            
-            const uniqueId= uniqueIdUserSpecificGenerator();
-    
-            const dataToUpdate={};
-            
-            let avatarObjFields;
-            if(avatarUrl){
-
-                avatarObjFields       =   {url: avatarUrl?avatarUrl:'', uniqueId, 
-                                            publicId:avatarPublicId, localpath:avatarfilepath}
-            }
-            let coverimageObjFields;    
-            if(coverimageurl)
-            { 
-                coverimageObjFields={url: coverimageurl?coverimageurl:'', uniqueId, 
-                                    publicId:coverimagePublicId, localpath:coverimagefilepath}
-            } //applied this approach since user may or may not upload coverimage as it's optional.
-
-            Object.assign(dataToUpdate, req.body, {avatar: avatarObjFields, coverimage: coverimageObjFields} )
-            // console.log(dataToUpdate)
-
-            const updatedUser= await users.findOneAndUpdate({_id:id}, dataToUpdate, {new:true, runValidators:true});
-            // console.log(updatedUser)
-
-            if(updatedUser)
-            {
-                res.status(200).json(new apiResponse(200,'success', updatedUser));
-            }
-            else
-            {
-                throw new apiError(`something went wrong=> couldn't complete the request`, 500);
-            }
-        
-    
+    res.status(200).json(new apiResponse(200,'success', updatedUser));
+             
 });
 
 
@@ -323,7 +281,7 @@ const updateAvatar= asyncHandler(async(req, res)=>{
 const user= await users.findById(req.user?._id)
 if(!user) throw new apiError('unauthorized request',401);
 
-console.log(req.file);
+// console.log(req.file);
 const avatarfilepath = req.file?.path
 
 if(!avatarfilepath) throw new apiError('An Image for Avatar is required', 400);
@@ -341,10 +299,17 @@ const avatarFields={
     publicId:response?.public_id
 }
 
-    user.avatar=avatarFields;
-    user.save({validateBeforeSave:false})
+    fileDeleteFunction(user?.avatar?.localpath)
+    .then(async()=>await cloudinaryFileDestroyer(user?.avatar?.publicId))
+    .then(async()=>{
 
-    res.status(200).json(new apiResponse(200, 'avatar updated!'))
+                user.avatar=avatarFields;
+                await user.save({validateBeforeSave:false})
+
+                res.status(200).json(new apiResponse(200, 'avatar updated!'))
+    }).catch((err)=> {
+        throw new apiError(err?.message|| 'something went wrong', err?.statusCode||500);
+    })
 
 });
 
@@ -372,7 +337,7 @@ const coverimageFields={
     uniqueId,
     publicId:response?.public_id
 }
-    
+    await user.deleteCoverImageFromCloudinary()
     user.coverimage=coverimageFields;
     user.save({validateBeforeSave:false})
 }

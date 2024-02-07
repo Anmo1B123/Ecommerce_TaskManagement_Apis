@@ -71,10 +71,7 @@ route.route('/passwordReset/:token').patch(passwordReset);
 //-----------------------------------------------------------------------------------------------------
 
 route.route('/:id').get(verifyJWT,getUser)
-                    .patch(upload.fields([
-                                          {name: 'avatar', maxCount: 1},
-                                          {name: 'coverimage', maxCount: 1}
-                                          ]),emailSymbolChecker,updateUser)
+                    .patch(emailSymbolChecker,updateUser)
                     .delete(verifyJWT,ifAdmin('admin'),deleteUser);
 
 export default route;                 

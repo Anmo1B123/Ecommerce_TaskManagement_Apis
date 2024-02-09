@@ -43,11 +43,12 @@ if (req.headers.authorization && token===req.headers.authorization)
 /*keep in mind that express automatically will throw jwt expiry error if 
 decoded doesn't exist so no need for one more conditional check for this. */
 
-        if(!user.refreshtoken) throw new apiError('User had logged-out, Kindly login again', 401);
+        if(!user.refreshtoken) throw new apiError('User had logged-out, Kindly login again to get \
+                                                    access and refresh token', 401);
         
         const uniqueVersionRefresh= user.uniqueVersionRefresh?user.uniqueVersionRefresh:undefined;
            
-        if(decoded.__v !== uniqueVersionRefresh) throw new apiError('This Refresh-Token is Invalid', 401)
+        if(decoded.__v !== uniqueVersionRefresh) throw new apiError('This Refresh-Token had become invalid', 401)
                
                 
         if(user.passwordChangedAt)

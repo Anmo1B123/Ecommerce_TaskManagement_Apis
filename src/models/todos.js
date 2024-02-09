@@ -65,23 +65,13 @@ subTodos:{
     
 }, {timestamps:true});
 
-let preFindHookFunc= function(){};
-export function initializePreFindHookFunc (requestObject) {
 
-    preFindHookFunc=function(next){
 
-            const req = requestObject;
-            this.find({createdBy:req.user._id});
-            next()
-        }
 
-}
+todoSchema.statics.findbyAuthenticatedUser= function(user){
 
-todoSchema.pre(/^find/, preFindHookFunc);
-
-todoSchema.statics.findbyAuthenticatedUser=function(user){
-
-    return this.find({createdBy:user._id});
+    console.log(this)
+    return ( this.find({createdBy:user._id}))
 }
 
 export const todos= mongoose.model('todos', todoSchema);

@@ -3,7 +3,7 @@ import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js";
 import apiResponse from "../../utils/apiResponse.js";
 import apiError from "../../utils/apiError.js";
 import { coupons } from "../../models/Ecom/coupon.js";
-import moment from "moment";
+import moment from "moment-timezone";
 import { getCart } from "./cart.controller.js";
 import { cart } from "../../models/Ecom/cart.js";
 import { couponApiFeatures } from "../../utils/apiFeatures.js";
@@ -128,10 +128,11 @@ const createCoupon_s = asyncHandler(async(req, res)=>{
         throw new apiError(400,"Minimum cart value must be greater than or equal to the discount value");
     }
 
-    const modifiedISOStartDateTemp = moment(startDate,'DD/MM/YY').toISOString();
+    const modifiedISOStartDateTemp = moment(startDate,'YYYY/MM/DD').toISOString();
 
-    const modifiedISOStartDate = moment(startDate,'DD/MM/YY').startOf('day').toISOString();
-    const modifiedISOExpiryDate = moment(expiryDate,'DD/MM/YY').endOf('day').toISOString();
+    const modifiedISOStartDate = moment(startDate,'YYYY/MM/DD').toISOString();
+    
+    const modifiedISOExpiryDate = moment(expiryDate,'YYYY/MM/DD').toISOString();
 
     const TimestampStart = new Date(modifiedISOStartDateTemp).getTime();
     const TimestampExpiry = new Date(modifiedISOExpiryDate).getTime();
@@ -146,6 +147,8 @@ const createCoupon_s = asyncHandler(async(req, res)=>{
 
     if(!coupon) throw new apiError('Something went wrong while creating the coupon', 500);
 
+    coupon._doc.startDate=moment(coupon.startDate).tz('Asia/Kolkata').toLocaleString()
+    coupon._doc.expiryDate=moment(coupon.expiryDate).tz('Asia/Kolkata').toLocaleString()
     res.status(200).json(new apiResponse(200, 'coupon created successfully', {coupon}))
 
 });
@@ -168,6 +171,11 @@ const updateCouponActiveStatusToggle_s = asyncHandler(async(req, res)=>{
 
     const newFoundCoupon = await coupons.findOne({owner:req.user?._id, _id:couponId})
 
+    newFoundCoupon.startDate=moment(newFoundCoupon.startDate).tz('Asia/Kolkata').toLocaleString()
+    newFoundCoupon.expiryDate=moment(newFoundCoupon.expiryDate).tz('Asia/Kolkata').toLocaleString()
+    /*we will always save a correct timezone in the specified schema and retrieve that to correctly 
+    display it to the correct timezone to the frontend and that timezone shall be the responsibility
+    of the frontend.*/
     return res.status(200).json(new apiResponse(200, 'coupon status updated', newFoundCoupon))
 
 
@@ -231,8 +239,11 @@ const updateCoupon_s = asyncHandler(async(req, res)=>{
                                                          req.body,
                                                          {new:true, runValidators:true})
 
-    if(!updatedCoupon) throw new apiError('coupon not found', 404);
+    if(!updatedCoupon || !'_id' in updatedCoupon) throw new apiError('coupon not found', 404);
     
+    updatedCoupon._doc.startDate= moment(updatedCoupon.startDate).tz('Asia/Kolkata').toLocaleString()
+    updatedCoupon._doc.expiryDate= moment(updatedCoupon.expiryDate).tz('Asia/Kolkata').toLocaleString()
+
     return res.status(200).json(new apiResponse(200, 'coupon was successfully updated', {updatedCoupon}))
 
 });

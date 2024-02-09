@@ -18,8 +18,8 @@ try {
   
     async (accessToken, refreshToken, profile, next)=>{
   
-      const profileuser= profile;
-      console.log(profileuser);
+      // const profileuser= profile;
+      // console.log(profileuser);
       // console.log('here is the profile 1=> ' + Object.keys(profile));
       
       const user= await users.findOne({ email:profile._json.email })

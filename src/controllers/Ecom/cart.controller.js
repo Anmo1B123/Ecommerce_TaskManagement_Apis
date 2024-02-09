@@ -70,6 +70,7 @@ export const getCart = async (userId) => {
             $cond:{
               if:{ $and:[
                 {$ne:[{$type:'$coupon'}, undefined]},
+                {$ne:[{$type:'$coupon'}, null]},
                 {$gte:['$cartTotal', '$coupon.discount']}
               ]
               },

@@ -1,6 +1,7 @@
 import { products } from "../models/Ecom/product.js";
 import { users } from "../models/users.js";
 import apiError from "./apiError.js";
+import _ from "lodash";
 
 export class apiFeatures{
 constructor(queryObj, queryString, modelVal){
@@ -12,6 +13,7 @@ this.modelVal = modelVal;
 }
 
 static  pageErrorfunc(documentCount, req){
+    if(documentCount===0) throw new apiError('No document Found', 404);
     const page= parseInt(req.query.page) || 1;
     
     const limit= parseInt(req.query.limit) || 5;
@@ -26,17 +28,13 @@ if (skip >= count) throw new apiError('Page not found', 400)
 search(){
 
     let exclusions= ['sort', 'page', 'limit', 'fields', 'filters']
-    const querystrobj= structuredClone(this.queryString);
+    const querystrobj= _.cloneDeep(this.queryString);
 
-    //used global method structured clone for deep cloning for future nested objects
-
-    // console.log(querystrobj);
     exclusions.forEach((el)=>{
 
         delete querystrobj[el]
         
     });
-    console.log(querystrobj);
 
     let querystr =JSON.stringify(querystrobj)
 
@@ -53,13 +51,13 @@ search(){
         regexQuery[key]= {$regex: new RegExp(`^${value}$`, 'i')}
 
     })
-
+    // console.log(regexQuery)
 
     this.queryObj= this.queryObj.find(regexQuery);
    
+    const queryObjForDocsOnthisPage= _.cloneDeep(this.queryObj)
 
-/* should use a dynamic variable for count in place of users model in the below code */
- this.docsCount=this.modelVal.find(regexQuery).count();
+    this.docsCount=queryObjForDocsOnthisPage.count();
 
     return this;
 }
@@ -101,8 +99,7 @@ console.log(this.docsCount + 'hey')
 
    this.queryObj= this.queryObj.skip(skip).limit(limit);
 
-   const queryObjForDocsOnthisPage= Object.create(this.queryObj)
-//Used Object.create to preserve the prototype of this.queryObj and queryObjForDocsOnthisPage
+   const queryObjForDocsOnthisPage= _.cloneDeep(this.queryObj);
 
    this.docsOnthisPage= queryObjForDocsOnthisPage.count()
    

@@ -2,11 +2,11 @@ import moment from "moment-timezone";
 import  satelize from "satelize";
 
 import { asyncHandler } from "../../middlewares/Handlers/asyncHandler.js"
-import { initializePreFindHookFunc, todos } from "../../models/todos.js";
+import {todos} from "../../models/todos.js";
 import apiError from '../../utils/apiError.js'
 import {apiFeatures} from '../../utils/apiFeatures.js'
 import apiResponse from '../../utils/apiResponse.js'
-import * as lodash from "lodash";
+
 
 
 
@@ -16,8 +16,7 @@ const {title=undefined, content="", duedate=undefined, priority=undefined} = req
     
 if([title,duedate].some((field)=>field===undefined || field.trim()==="")) throw new apiError('title and duedate is required',400);
 
-    const duedateStr= `${duedate}`
-    const modifiedDate = moment(duedateStr, 'DD/MM/YY').startOf('day')
+    const modifiedDate = moment(duedate, 'YYYY/MM/DD')
     const isoDate = modifiedDate.toISOString()
 
 // console.log(datedue)
@@ -28,53 +27,36 @@ if([title,duedate].some((field)=>field===undefined || field.trim()==="")) throw 
                                             priority,
                                             createdBy:req.user._id
                                             })
-    res.status(200).json(new apiResponse(200,'Success', {todo}));
+
+    if(!todo) throw new apiError('something went wrong while creating todo', 500);
+
+    todo._doc.duedate=moment(todo.duedate).tz('Asia/Kolkata').toLocaleString()
+    return res.status(200).json(new apiResponse(200,'Success', {todo}));
 
 });
 
 const getAllTodos = asyncHandler(async (req,res)=>{
 
     console.log(req.clientIp)
-    satelize.satelize({ip:req.clientIp}, (err, load)=> console.log(load))
-    initializePreFindHookFunc(req);
-
+    satelize.satelize({ip:'127.0.0.1'}, (err, load)=> console.log(load))
+    
    if(Object.keys(req.query).length ===0)
    {
-
-    console.log('hey')
-        // todos.find()
-        // const todos= await todos.find({createdBy: req.user._id}).sort('-createdAt');
-
-       
-    //    const allTodos= await todos.findbyAuthenticatedUser(req.user).sort('-createdAt');
-       let allTodo= await todos.find().sort('-createdAt');
-      
-    //    const allTodo= allTodos.map((todo)=>{
-    //     return{
-    //         ...todo,
-    //     newDuedate: moment(todo.duedate).tz('Asia/Kolkata').format()
-    //     }
-    //    })
-    // console.log(moment(allTodos[0].duedate).tz('Asia/Kolkata'))
+    //    let allTodo= await todos.find({createdBy: req.user?._id}).sort('-createdAt');
+       let allTodo= await todos.findbyAuthenticatedUser(req.user).sort('-createdAt');
 
         allTodo.forEach((todo, index)=>{
 
             const targetObject = Object.assign({}, todo._doc)
             // console.log(targetObject.duedate)
-            targetObject.duedate= moment(targetObject.duedate).tz('Asia/Kolkata').format()
+            targetObject.duedate= moment(targetObject.duedate).tz('Asia/Kolkata').toLocaleString()
             // console.log(targetObject.duedate)
 
             allTodo[index]= targetObject
 
         })
 
-    //    const allTodos= allTodo.map((todo)=>{
-
-
-    //     todo._doc.duedate=moment(todo._doc.duedate).tz('Asia/Kolkata')
-
-    //     })
-
+        if(!allTodo.length) throw new apiError('No todos Found', 404);
         res.status(200).json(new apiResponse(200, 'Success', {Length:allTodo.length,allTodo}));
 
    }
@@ -87,7 +69,18 @@ const getAllTodos = asyncHandler(async (req,res)=>{
     const   docsOnThisPage  =     await query.docsOnthisPage;
     const   data            =     await query.queryObj;
 
+    data.forEach((todoObj, index)=>{
+
+        todoObj._doc.duedate=moment(todoObj.duedate).tz('Asia/Kolkata').format('LL')
+
+
+    });
+
+    /* ALWAYS REMEMBER THAT THESE ARRAYS AND OBJECTS ARE REFERNCE TYPE SO A CHANGE IN THE ONE SHALL DEFINETELY
+        REFLECT IN THE ORIGINAL ONE AS WELL. AS WE CAN SEE IN THE ABOVE LOOP*/
+
     apiFeatures.pageErrorfunc(documentsCount, req)
+
 
     res.status(200).json(new apiResponse(200, 'Success', {Length:documentsCount, page:query.page, 
                                                           limit:query.limit, docsOnThisPage, todos:data}))
@@ -102,8 +95,8 @@ const getAllTodos = asyncHandler(async (req,res)=>{
 const updateTodoById = asyncHandler(async (req,res,next)=>{
 
     const {id} = req.params;
-initializePreFindHookFunc(req);
-   let todo= await todos.find({_id:id})
+
+   let todo= await todos.find({createdBy:req.user?._id,_id:id})
     // this todo is always an array act accordingly
 //    console.log(todo)
    if(todo.length===0) throw new apiError('Could not find any todo by this id', 400); 
@@ -125,10 +118,9 @@ console.log('false')
    if((title===""||title?.trim()==="") && (duedate===""||duedate.trim()==="")){
     throw new apiError('title and duedate cannot be empty for todo', 400);}
 
-    console.log(duedate)
+    
    let datedue = moment(duedate, 'YYYY/MM/DD')
-   
-   console.log(datedue)
+  
    /* For-each does not work for undefined elements of an array */
     const propArr= [['title', title], ['content', content], 
                     ['duedate', datedue], ['priority', priority]
@@ -147,7 +139,9 @@ let todoObj = todo[0];
     // await todo.save()
    await todoObj.save({validateBeforeSave:false});
     
-   const updatedUser=  await todos.findOne({createdBy: req.user._id}).where('_id').equals(id);
+   const updatedUser=  await todos.findOne({createdBy: req.user?._id, _id:id})
+
+   updatedUser._doc.duedate=moment(updatedUser.duedate).tz('Asia/Kolkata').toLocaleString()
 
    res.status(200).json( new apiResponse(200, 'Success', updatedUser));
 

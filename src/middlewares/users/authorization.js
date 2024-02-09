@@ -7,7 +7,7 @@ import { client } from '../../database/redis.js';
 
  const verifyJWT = asyncHandler ( async (req,res,next)=>{
  
-    let token= req.headers.authorization || req.cookies?.accessToken || "";
+    let token= req.cookies?.accessToken || req.headers.authorization || "";
 
 if(!token) throw new apiError('unauthorized request', 401);
     // console.log(token)
